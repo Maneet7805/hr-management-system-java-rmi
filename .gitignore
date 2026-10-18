@@ -22,3 +22,41 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# --- Project-specific ---
+# Secrets and TLS material: never commit
+*.jks
+*.p12
+*.pfx
+*.keystore
+*.truststore
+.env
+*.env
+config.properties
+
+# Local databases and data
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Build output
+out/
+bin/
+build/
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+nbproject/
+nbbuild/
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
