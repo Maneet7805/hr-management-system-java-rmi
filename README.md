@@ -25,8 +25,9 @@ Swing GUI client  --(RMI over TLS)-->  RMI server  --(JDBC)-->  Database
 
 ## Requirements
 
-- JDK 17 or newer (any OS)
-- A relational database (SQLite or MySQL, to be decided by the team)
+- JDK 17 or newer (any OS). Java 8 will not build this project.
+- Apache Maven 3.9+ (NetBeans, IntelliJ and Eclipse can open the `pom.xml` directly)
+- MySQL (the database recommended in the team research; not final until the group agrees)
 - Git
 
 ## Getting started
@@ -38,15 +39,27 @@ cd hr-management-system-java-rmi
 
 Build and run instructions will be added here once the first version of the server and client is working.
 
-## Project layout (planned)
+## Project layout
 
 ```
-src/
-  common/   shared remote interface and data classes
-  server/   RMI server, service logic, data access
-  client/   Swing GUI
-tests/      unit tests and manual test cases
+pom.xml                          build file (Maven, Java 17)
+config/                          *.example.properties templates; real config and keystores are git-ignored
+scripts/                         generate-keys.sh / .bat: local TLS keystore and truststore
+src/main/java/com/bhel/hrm/
+  common/                        HRMService remote interface + model/ data classes (shared contract)
+  server/                        RMI server and HRMServiceImpl (business rules)
+    dao/                           data-access interfaces
+    dao/jdbc/                      JDBC implementations
+    db/                            connection setup
+    security/                      TLS, password hashing, deserialization filter
+  client/                        client entry point and server connection
+    ui/                            Swing screens
+src/main/resources/              SQL schema and other resources
+src/test/java/                   JUnit tests, mirrors the main packages
+docs/                            test manual and diagrams
 ```
+
+Secrets are never stored in files: set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD` and `HRM_TRUSTSTORE_PASSWORD` as environment variables.
 
 ## Team workflow
 

@@ -14,4 +14,4 @@ Closes #
 - [ ] I ran the code and tested my change
 - [ ] Tests or manual test cases added/updated where relevant
 - [ ] No secrets, keystores or real personal data committed
-- [ ] Shared interface (`src/common/`) unchanged, or the group agreed the change
+- [ ] Shared interface (`src/main/java/com/bhel/hrm/common/`) unchanged, or the group agreed the change

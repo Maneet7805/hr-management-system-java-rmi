@@ -60,3 +60,7 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Real config: only the *.example.properties templates are committed
+config/*.properties
+!config/*.example.properties
