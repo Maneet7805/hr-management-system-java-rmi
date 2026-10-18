@@ -31,13 +31,13 @@ Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Databa
 3. Server: any shared state must be thread-safe. Use `PreparedStatement` for all SQL. Never store or log plain-text passwords.
 4. Client: never call RMI methods on the Swing event thread; use `SwingWorker` and show a clear message when the server is unreachable.
 5. Never add secrets, keystores, or real personal data to the repo.
-6. Use Java 17 features at most; Swing only (no JavaFX).
+6. Use Java 25 features at most; Swing only (no JavaFX).
 7. Keep code readable by students: small methods, clear names, comments that explain why.
 8. This is graded coursework with individual marks. Explain what you wrote so the author can describe it themselves. Do not generate report text for sections marked individual.
 
 ## Build and test
 
-Build, run and test commands will be filled in here once the first working version exists. The project uses Maven (Java 17): `mvn compile` to build, `mvn test` to run tests. Run commands will be added once the server and client have entry points.
+Build, run and test commands will be filled in here once the first working version exists. The project uses Maven (Java 25): `mvn compile` to build, `mvn test` to run tests. Run commands will be added once the server and client have entry points.
 
 ## Git conventions
 
