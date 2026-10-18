@@ -18,13 +18,15 @@ Functional scope:
 Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Database
 ```
 
-- `src/common/`: `HRMService` remote interface (extends `java.rmi.Remote`) and serializable data classes (`Employee`, `FamilyMember`, `LeaveApplication`, `YearlyReport`).
-- `src/server/`: RMI server, service logic, data access.
-- `src/client/`: Swing GUI. Screens: login, employee, HR.
+- `src/main/java/com/bhel/hrm/common/`: `HRMService` remote interface (extends `java.rmi.Remote`) and serializable data classes (`Employee`, `FamilyMember`, `LeaveApplication`, `YearlyReport`).
+- `src/main/java/com/bhel/hrm/server/`: RMI server, service logic, data access.
+- `src/main/java/com/bhel/hrm/client/`: Swing GUI in `ui/`. Screens: login, employee, HR.
+- Server sub-packages: `dao/` (interfaces), `dao/jdbc/` (implementations), `db/`, `security/`.
+- Config lives in `config/*.example.properties`; secrets come from environment variables, never files.
 
 ## Rules for AI-assisted changes
 
-1. **Do not change `HRMService` or the data classes in `src/common/`** without being asked. Every teammate's code depends on them.
+1. **Do not change `HRMService` or the data classes in `src/main/java/com/bhel/hrm/common/`** without being asked. Every teammate's code depends on them.
 2. If a task needs a technology choice the team has not made (database, hashing library, etc.), say so instead of picking one silently.
 3. Server: any shared state must be thread-safe. Use `PreparedStatement` for all SQL. Never store or log plain-text passwords.
 4. Client: never call RMI methods on the Swing event thread; use `SwingWorker` and show a clear message when the server is unreachable.
@@ -35,7 +37,7 @@ Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Databa
 
 ## Build and test
 
-Build, run and test commands will be filled in here once the first working version exists. Until then, compile with `javac` from the source root.
+Build, run and test commands will be filled in here once the first working version exists. The project uses Maven (Java 17): `mvn compile` to build, `mvn test` to run tests. Run commands will be added once the server and client have entry points.
 
 ## Git conventions
 

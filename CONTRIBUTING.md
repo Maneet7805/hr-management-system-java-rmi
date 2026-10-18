@@ -7,7 +7,7 @@ This is a small group project with a hard deadline, so the rules are short. Foll
 1. **Never push directly to `main`.** `main` must always compile and run.
 2. **One branch per task, one pull request (PR) per branch.**
 3. **Every PR needs one teammate's approval** before it is merged.
-4. **Change the shared interface only by agreement.** `HRMService` and the data classes in `src/common/` are used by everyone. Raise an issue and tell the group first.
+4. **Change the shared interface only by agreement.** `HRMService` and the data classes in `src/main/java/com/bhel/hrm/common/` are used by everyone. Raise an issue and tell the group first.
 5. **Never commit secrets:** passwords, keystores (`*.jks`, `*.p12`), `.env` files, database files with real data. Use the `.example` pattern (for example `config.example.properties`).
 
 ## 2. Workflow
