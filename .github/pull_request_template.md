@@ -15,4 +15,3 @@ Closes #
 - [ ] Tests or manual test cases added/updated where relevant
 - [ ] No secrets, keystores or real personal data committed
 - [ ] Shared interface (`src/common/`) unchanged, or the group agreed the change
-- [ ] `docs/DECISIONS.md` updated if a design decision changed
