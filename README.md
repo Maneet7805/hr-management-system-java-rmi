@@ -23,12 +23,10 @@ Swing GUI client  --(RMI over TLS)-->  RMI server  --(JDBC)-->  Database
 - **Data classes:** `Employee`, `FamilyMember`, `LeaveApplication`, `YearlyReport` implement `Serializable`.
 - **Layers:** client GUI, remote interface, service logic, data access.
 
-The agreed technology choices are tracked in [docs/DECISIONS.md](docs/DECISIONS.md).
-
 ## Requirements
 
 - JDK 17 or newer (any OS)
-- Database as chosen in `docs/DECISIONS.md`
+- A relational database (SQLite or MySQL, to be decided by the team)
 - Git
 
 ## Getting started
@@ -47,7 +45,6 @@ src/
   common/   shared remote interface and data classes
   server/   RMI server, service logic, data access
   client/   Swing GUI
-docs/       decisions, workload matrix, report notes
 tests/      unit tests and manual test cases
 ```
 
