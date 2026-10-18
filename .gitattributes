@@ -1,0 +1,11 @@
+# Normalise line endings so Windows, macOS and Linux teammates do not fight over them
+* text=auto eol=lf
+*.bat text eol=crlf
+
+# Binary files
+*.jks binary
+*.p12 binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary
