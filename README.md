@@ -25,7 +25,7 @@ Swing GUI client  --(RMI over TLS)-->  RMI server  --(JDBC)-->  Database
 
 ## Requirements
 
-- JDK 17 or newer (any OS). Java 8 will not build this project.
+- JDK 25 (LTS) or newer (any OS). Older Java will not build this project.
 - Apache Maven 3.9+ (NetBeans, IntelliJ and Eclipse can open the `pom.xml` directly)
 - MySQL (the database recommended in the team research; not final until the group agrees)
 - Git
@@ -42,7 +42,7 @@ Build and run instructions will be added here once the first version of the serv
 ## Project layout
 
 ```
-pom.xml                          build file (Maven, Java 17)
+pom.xml                          build file (Maven, Java 25)
 config/                          *.example.properties templates; real config and keystores are git-ignored
 scripts/                         generate-keys.sh / .bat: local TLS keystore and truststore
 src/main/java/com/bhel/hrm/
