@@ -148,6 +148,17 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 74 | A leave request that is accepted says what was sent: "Application sent: 3 days of Annual leave, waiting for HR's decision." Pending days already show in the balance. | The person sees at once that it worked and what happens next. |
 | 75 | Dates are typed as yyyy-MM-dd and checked on the screen first; a wrong date is explained with an example and nothing is sent (decision #66). | Same wording everywhere, and no round trip for a typing mistake. |
 
+## Phase 7c: HR screens (all Assistant calls; the owner delegated the open choices on 2026-10-19)
+
+| # | Decision | Why |
+|---|---|---|
+| 76 | HR staff see Employees, Leave requests and Yearly report first, then My details and Family. Employees never see the HR tabs. The server enforces this independently (#26); the tabs only keep the window honest. | HR staff do not apply for leave (#25, #55). |
+| 77 | A new employee's temporary password is shown once, in its own box with Copy and Done. It is never written into a message. It disappears when HR presses Done, starts another registration, or switches to another tab. Whether to copy it to the clipboard is HR's choice. | A temporary password lying on screen or in a message is a leak waiting to happen (#54). |
+| 78 | Approving and rejecting leave both ask first, naming the person, days, type and dates. If the server says the request was already decided or no longer exists, the message is shown and the list is refreshed. | A decision cannot be undone (#24), and two HR users may act at once (#59). |
+| 79 | The yearly report is plain text: the same text is shown on screen and saved to a UTF-8 file, with a suggested name such as `yearly-report-AB123456-2026.txt`. The old report is cleared as soon as a new one is requested, and cancelling the save dialog is not an error. Replacing an existing file asks first. | Simple, readable anywhere (a text editor, Word), and a report on screen can never be mistaken for another employee's. |
+| 80 | Report layout: sections for the employee, family, leave balances and the year's applications, columns aligned with spaces; an empty section says "(none recorded)" or "(none)". | Easy to read and easy to test. |
+| 81 | Clipboard and file chooser sit behind small interfaces (`ClipboardWriter`, `FileSaver`), as the confirmation dialog does. | Tests need no display, and the real dialogs stay thin. |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.
