@@ -39,6 +39,20 @@ cd hr-management-system-java-rmi
 
 Build and run instructions will be added here once the first version of the server and client is working.
 
+### Running the tests
+
+```bash
+mvn test
+```
+
+The database tests use a real MySQL database called `hrm_test` and a MySQL user `hrm_app` that may use it. Set the user's password in the environment variable `HRM_DB_PASSWORD` first. Without MySQL or that variable, those tests **fail** on purpose, so a green run always means the database was tested. To skip them deliberately (the quotes are needed in PowerShell):
+
+```bash
+mvn test "-Dhrm.skipDbTests=true"
+```
+
+To create the tables in the development database `hrm`, run `com.bhel.hrm.server.db.DatabaseSetupMain` (it also needs `HRM_DB_PASSWORD`).
+
 ## Project layout
 
 ```
