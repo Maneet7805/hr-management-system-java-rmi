@@ -79,7 +79,20 @@ The brief only states the features. Everything below is our own design; the owne
 
 Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see #11).
 
+## Phase 3 and repository setup (all Assistant calls unless noted)
+
+| # | Decision | Why |
+|---|---|---|
+| 37 | The service reaches data only through `Database.read(...)` and `Database.transaction(...)`; each hands out DAOs bound to one connection. | Explicit and easy to explain; no hidden per-thread connection. Needed for the row lock in #20. |
+| 38 | One connection per unit of work, no connection pool. | Enough for this project's size; keeps the code short. |
+| 39 | MySQL user `hrm_app` has full rights on `hrm` and `hrm_test` only. Its password was generated at random and lives only in the user environment variable `HRM_DB_PASSWORD` (owner approved, option A). | Least privilege that still lets the program create its own tables. Nothing secret in the repo. |
+| 40 | Database tests fail if MySQL or the password is missing. Skipping needs `mvn test "-Dhrm.skipDbTests=true"` (the quotes matter in PowerShell). GitHub Actions starts its own MySQL. | A green run must mean the database was really tested. Decided with the owner: no teammates are on the code yet. |
+| 41 | Phone, email and address length limits (30, 100, 255) are checked in the Phase 5 service, not in the shared contract. | The contract is frozen; the columns are not. |
+| 42 | Repository is public (owner). `main` is protected: a pull request and the passing `test` check are required, 0 approvals, admins not forced. Secret scanning, push protection, Dependabot alerts and security updates are on. | Owner works alone for now; this still blocks accidental direct pushes and secret leaks. |
+| 43 | CI is GitHub Actions with Temurin Java 25 and a throwaway MySQL 8.4 container. Dependabot checks Maven and Actions weekly, grouped. | PR #6. |
+| 44 | New commits in this repo use the GitHub no-reply email (set locally; the global git setting is unchanged). | Keeps the owner's Gmail address out of new public commits. Older commits still show it. |
+
 ## Open
 
-- Owner still has to set the `root` password and `HRM_DB_PASSWORD`; then the `hrm` user is created.
+- The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.
 - Whether leave types and allowances match what the lecturer or group expects.
