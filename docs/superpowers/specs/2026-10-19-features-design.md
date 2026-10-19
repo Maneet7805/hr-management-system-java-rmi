@@ -2,7 +2,9 @@
 
 Status: **Approved by delegation** (the owner left the open choices to the assistant, 2026-10-19). Built in two parts: **5a** (employees and family) and **5b** (leave and reports).
 
-**5a is built** on branch `feature/employee-features`: `EmployeeService`, `TemporaryPasswords`, `ServiceSupport`, the wiring in `HRMServiceImpl`, and tests (25 service tests against real MySQL, 5 for temporary passwords, an end-to-end test over TLS). 5b is next.
+**5b is built** on branch `feature/leave-features`: `LeaveService`, `ReportService`, `BalanceCalculator`, the final `HRMServiceImpl` (all 19 methods are real, none answers "Not implemented yet"), and 48 service tests against real MySQL plus an end-to-end test over TLS. Both race tests fail when the employee-row lock is removed. The server side is now complete; what remains is the Swing client, fault tolerance on the client, and the report.
+
+**5a is built** (merged, PR #14) on branch `feature/employee-features`: `EmployeeService`, `TemporaryPasswords`, `ServiceSupport`, the wiring in `HRMServiceImpl`, and tests (25 service tests against real MySQL, 5 for temporary passwords, an end-to-end test over TLS). 5b is next.
 
 Differences from the plan above: the temporary-password alphabet has 57 characters, not 56 (24 uppercase, 25 lowercase, 8 digits; the earlier count was an arithmetic slip). Two earlier tests that relied on `getMyProfile` and `updateFamilyMember` being "not implemented" now check what those methods really do.
 

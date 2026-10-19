@@ -23,6 +23,8 @@ import com.bhel.hrm.server.ServerSettings;
 import com.bhel.hrm.server.security.SessionManager;
 import com.bhel.hrm.server.service.AuthService;
 import com.bhel.hrm.server.service.EmployeeService;
+import com.bhel.hrm.server.service.LeaveService;
+import com.bhel.hrm.server.service.ReportService;
 import com.bhel.hrm.server.testsupport.CountingHasher;
 import com.bhel.hrm.server.testsupport.FakeDatabase;
 import java.io.ByteArrayOutputStream;
@@ -68,8 +70,9 @@ class RmiOverTlsTest {
         FakeDatabase database = new FakeDatabase();
         CountingHasher hasher = new CountingHasher();
         AuthService auth = new AuthService(database, hasher, new SessionManager(Clock.systemUTC()));
-        EmployeeService employees = new EmployeeService(database, hasher, auth);
-        server = RmiServer.start(settings, new HRMServiceImpl(database, auth, employees));
+        server = RmiServer.start(settings, new HRMServiceImpl(database, auth,
+                new EmployeeService(database, hasher, auth),
+                new LeaveService(database, auth, Clock.systemDefaultZone()), new ReportService(database, auth)));
     }
 
     @AfterAll

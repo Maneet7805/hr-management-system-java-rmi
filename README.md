@@ -17,7 +17,7 @@ Work in progress. Updated as pull requests are merged.
 | Shared contract (`HRMService`, data classes, exceptions) | Done |
 | RMI over TLS connection | Done |
 | Database schema and data-access layer (MySQL) | Done |
-| Service logic (login, employee registration, leave, yearly report) | In progress |
+| Service logic (login, employee registration, leave, yearly report) | Done |
 | Swing client (HR and employee screens) | In progress |
 | Test manual, use case diagram, demo walkthrough | Planned |
 

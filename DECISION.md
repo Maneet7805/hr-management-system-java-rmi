@@ -115,6 +115,15 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 56 | Leave can have past dates (a medical certificate often comes after the fact). The only date rules are the contract's (end not before start, one calendar year). | Not restricting what the brief does not restrict. |
 | 57 | Someone else's family member id is reported as "Family member not found." | Does not reveal that the id exists. |
 
+### Phase 5b additions (leave and reports)
+
+| # | Decision | Why |
+|---|---|---|
+| 58 | Applying for leave runs these checks in this order, inside one transaction that first locks the employee row: leave type exists, no overlap with PENDING or APPROVED leave, enough days left (allowance minus approved minus pending for the start year). The refusal names the numbers: "Not enough Annual leave left: 14 day(s) remaining, 15 requested." | Implements #19, #20 and #23. The messages tell the user what to change. |
+| 59 | The row lock is proven necessary: with it removed, the test with ten simultaneous requests for the last three Emergency days and the test with five simultaneous requests for the same dates both fail. | Evidence for the report's section on concurrency. |
+| 60 | Times (applied, decided) are the server's local time, cut to whole seconds, and carry no time zone. | The database stores whole seconds, so what is returned equals what is stored. A server in another zone would show its own local time. |
+| 61 | The yearly report is built in one transaction, so profile, family, applications and balances describe the same moment. | A report must not mix data from before and after a concurrent change. |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.
