@@ -159,6 +159,16 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 80 | Report layout: sections for the employee, family, leave balances and the year's applications, columns aligned with spaces; an empty section says "(none recorded)" or "(none)". | Easy to read and easy to test. |
 | 81 | Clipboard and file chooser sit behind small interfaces (`ClipboardWriter`, `FileSaver`), as the confirmation dialog does. | Tests need no display, and the real dialogs stay thin. |
 
+## Running the program (all Assistant calls; requested by the owner on 2026-10-19)
+
+| # | Decision | Why |
+|---|---|---|
+| 82 | Running the program is two double-clicks: `setup.bat` once and `run.bat` each time (PowerShell scripts in `scripts/`). | The owner found the manual steps (about ten commands) too many just to see the window. |
+| 83 | The development key password is generated randomly and saved in the Windows user settings, like `HRM_DB_PASSWORD`, never in a file of the project. | Keeps the rule that secrets are never in files (#16). |
+| 84 | `setup` reuses existing keys only if the saved password opens them; otherwise it makes new development keys. It never overwrites an existing settings file. | Never destroys a working setup, but never leaves keys nobody can open. |
+| 85 | The scripts check each program's exit code rather than treating its messages as errors. | `keytool` and `java` print ordinary progress messages to the error stream; treating them as fatal stopped key creation halfway (found by testing on a copy). |
+| 86 | MySQL is started by the script only if nothing is listening on port 3306; paths can be changed with `HRM_MYSQLD` and `HRM_MYSQL_DATA`. | MySQL on this project is started by hand, not as a Windows service (#17). |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.

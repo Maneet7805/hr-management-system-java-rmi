@@ -54,7 +54,17 @@ git clone https://github.com/Maneet7805/hr-management-system-java-rmi.git
 cd hr-management-system-java-rmi
 ```
 
-### Local setup
+### Quick start (Windows)
+
+Needs JDK 25, Maven, MySQL 8.4 with the `hrm` database and a MySQL user `hrm_app`, and its password saved as `HRM_DB_PASSWORD` in your Windows user settings.
+
+1. **Once:** double-click `setup.bat`. It chooses a password for the development keys and saves it in your Windows user settings (never in a file of the project), makes the keys and the settings files, creates the database tables, and offers to create the first HR account. It never overwrites a settings file you already have.
+2. **Every time:** double-click `run.bat`. It starts MySQL if it is not running, builds the program, starts the server in the background, opens the window, and stops the server again when you close the window.
+
+If MySQL is installed somewhere else, set `HRM_MYSQLD` (full path of `mysqld.exe`) and `HRM_MYSQL_DATA` (its data folder). If something goes wrong, the message says what to do; the server's own messages are in `target/server.log`.
+
+The manual steps below do the same things one by one, for other systems or for running from an IDE.
+### Manual setup
 
 1. Install the tools listed under [Requirements](#requirements).
 2. Create the TLS keystore and truststore with `scripts/generate-keys.sh` (macOS/Linux) or `scripts/generate-keys.bat` (Windows).
@@ -78,7 +88,7 @@ mvn test "-Dhrm.skipDbTests=true"
 
 To create the tables in the development database `hrm`, run `com.bhel.hrm.server.db.DatabaseSetupMain` (it also needs `HRM_DB_PASSWORD`).
 
-### First run (from your IDE)
+### Manual first run (for example from an IDE)
 
 Set these environment variables in the run configuration, never in a file: `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD`, and for the client `HRM_TRUSTSTORE_PASSWORD`.
 
