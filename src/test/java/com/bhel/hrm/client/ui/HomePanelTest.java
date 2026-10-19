@@ -49,16 +49,27 @@ class HomePanelTest {
     }
 
     @Test
-    void hrStaffHaveNoLeaveTabBecauseTheyDoNotApplyForLeave() throws Exception {
-        HomePanel home = onEdt(() -> new HomePanel(StubService.forHome(HANA).service(), navigator, HR));
+    void hrStaffGetTheHrTabsFirstAndNoLeaveTabBecauseTheyDoNotApplyForLeave() throws Exception {
+        HomePanel home = onEdt(() -> new HomePanel(StubService.forHrHome(HANA).service(), navigator, HR));
 
-        assertEquals(List.of("My details", "Family"), tabTitles(home));
+        assertEquals(List.of("Employees", "Leave requests", "Yearly report", "My details", "Family"), tabTitles(home));
+        assertInstanceOf(EmployeesPanel.class, onEdt(() -> home.tabs().getComponentAt(0)));
+        assertInstanceOf(PendingLeavePanel.class, onEdt(() -> home.tabs().getComponentAt(1)));
+        assertInstanceOf(ReportPanel.class, onEdt(() -> home.tabs().getComponentAt(2)));
+    }
+
+    @Test
+    void anEmployeeNeverGetsTheHrTabs() throws Exception {
+        HomePanel home = onEdt(() -> new HomePanel(StubService.forHome(ALICE).service(), navigator, EMPLOYEE));
+
+        assertTrue(tabTitles(home).stream().noneMatch(title -> title.equals("Employees")
+                || title.equals("Leave requests") || title.equals("Yearly report")));
     }
 
     @Test
     void theWelcomeLineNamesThePersonAndTheirRole() throws Exception {
         HomePanel employee = onEdt(() -> new HomePanel(StubService.forHome(ALICE).service(), navigator, EMPLOYEE));
-        HomePanel hr = onEdt(() -> new HomePanel(StubService.forHome(HANA).service(), navigator, HR));
+        HomePanel hr = onEdt(() -> new HomePanel(StubService.forHrHome(HANA).service(), navigator, HR));
 
         assertEquals("Welcome, Alice Tan (Employee)", onEdt(() -> employee.welcomeLabel().getText()));
         assertEquals("Welcome, Hana Lim (HR staff)", onEdt(() -> hr.welcomeLabel().getText()));

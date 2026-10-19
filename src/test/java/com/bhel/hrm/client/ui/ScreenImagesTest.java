@@ -201,4 +201,80 @@ class ScreenImagesTest {
 
         assertSomethingWasDrawn(draw("home-employee", panel, 960, 700));
     }
+
+    // ---- HR screens ----------------------------------------------------------------------------
+
+    private static final Employee HANA = new Employee(9L, "Hana", "Lim", "HR900001", Role.HR, null, null, null, false);
+    private static final Session HR_SESSION = new Session("t", 9L, "Hana Lim", Role.HR, false);
+
+    private static StubService hrServer() {
+        int year = LocalDate.now().getYear();
+        LeaveApplication first = new LeaveApplication(11L, 7L, "Alice Tan", ANNUAL, LocalDate.of(year, 8, 3),
+                LocalDate.of(year, 8, 5), 3, "Visiting family", LeaveStatus.PENDING,
+                LocalDateTime.of(year, 7, 20, 9, 15), null);
+        LeaveApplication second = new LeaveApplication(12L, 8L, "Bob Lee", MEDICAL, LocalDate.of(year, 8, 10),
+                LocalDate.of(year, 8, 10), 1, null, LeaveStatus.PENDING, LocalDateTime.of(year, 7, 28, 8, 0), null);
+        return StubService.forHrHome(HANA)
+                .returns("listEmployees", List.of(HANA, ALICE,
+                        new Employee(8L, "Bob", "Lee", "CD123456", Role.EMPLOYEE, null, "bob@bhel.example", null, false),
+                        new Employee(10L, "Siti", "Binti Ahmad", "A1234567", Role.EMPLOYEE, "019-8765432", null, null, true)))
+                .returns("listPendingLeave", List.of(first, second))
+                .returns("registerEmployee", new com.bhel.hrm.common.model.RegistrationResult(
+                        new Employee(21L, "Daniel", "Ong", "EF123456", Role.EMPLOYEE, null, null, null, true), "kT7mQp4VxN9s"))
+                .returns("generateYearlyReport", new com.bhel.hrm.common.model.YearlyReport(ALICE, year,
+                        List.of(new FamilyMember(1L, "Bob Tan", "Spouse", LocalDate.of(1990, 5, 17))),
+                        List.of(first),
+                        List.of(new LeaveBalance(ANNUAL, year, 0, 3), new LeaveBalance(MEDICAL, year, 0, 0),
+                                new LeaveBalance(EMERGENCY, year, 0, 0), new LeaveBalance(UNPAID, year, 0, 0))));
+    }
+
+    @Test
+    void employeesScreenWithATemporaryPasswordShown() throws Exception {
+        EmployeesPanel panel = onEdt(() -> new EmployeesPanel(hrServer().service(),
+                new SwingTestSupport.RecordingNavigator(), HR_SESSION, text -> { }));
+        awaitTrue("employees loaded", () -> panel.table().getRowCount() == 4);
+        onEdt(() -> {
+            panel.firstNameField().setText("Daniel");
+            panel.lastNameField().setText("Ong");
+            panel.icField().setText("EF123456");
+            panel.registerButton().doClick();
+        });
+        awaitTrue("password shown", () -> panel.passwordPanel().isVisible());
+
+        assertSomethingWasDrawn(draw("hr-employees", panel, 960, 560));
+    }
+
+    @Test
+    void leaveRequestsScreen() throws Exception {
+        PendingLeavePanel panel = onEdt(() -> new PendingLeavePanel(hrServer().service(),
+                new SwingTestSupport.RecordingNavigator(), HR_SESSION, question -> true));
+        awaitTrue("requests loaded", () -> panel.table().getRowCount() == 2);
+        onEdt(() -> panel.table().setRowSelectionInterval(0, 0));
+
+        assertSomethingWasDrawn(draw("hr-leave-requests", panel, 960, 460));
+    }
+
+    @Test
+    void yearlyReportScreen() throws Exception {
+        ReportPanel panel = onEdt(() -> new ReportPanel(hrServer().service(),
+                new SwingTestSupport.RecordingNavigator(), HR_SESSION, name -> java.util.Optional.empty()));
+        awaitTrue("employees to choose from", () -> panel.employeeCombo().getItemCount() == 4);
+        onEdt(() -> {
+            panel.employeeCombo().setSelectedIndex(1);
+            panel.generateButton().doClick();
+        });
+        awaitTrue("report shown", () -> !panel.reportText().getText().isEmpty());
+
+        assertSomethingWasDrawn(draw("hr-report", panel, 1000, 620));
+    }
+
+    @Test
+    void homeScreenOfHrStaff() throws Exception {
+        HomePanel panel = onEdt(() -> new HomePanel(hrServer().service(),
+                new SwingTestSupport.RecordingNavigator(), HR_SESSION));
+        EmployeesPanel employees = (EmployeesPanel) onEdt(() -> panel.tabs().getComponentAt(0));
+        awaitTrue("employees loaded", () -> employees.table().getRowCount() == 4);
+
+        assertSomethingWasDrawn(draw("home-hr", panel, 960, 640));
+    }
 }

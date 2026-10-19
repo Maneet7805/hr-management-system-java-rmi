@@ -61,6 +61,13 @@ public final class StubService {
                 .returns("logout", null);
     }
 
+    /** As {@link #forHome}, plus what the HR tabs ask for on arrival. */
+    public static StubService forHrHome(com.bhel.hrm.common.model.Employee profile) {
+        return forHome(profile)
+                .returns("listEmployees", List.of())
+                .returns("listPendingLeave", List.of());
+    }
+
     /** What the method returns (or throws, if the value is a Throwable). */
     public synchronized StubService returns(String method, Object value) {
         handlers.put(method, arguments -> value);
