@@ -92,6 +92,19 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 43 | CI is GitHub Actions with Temurin Java 25 and a throwaway MySQL 8.4 container. Dependabot checks Maven and Actions weekly, grouped. | PR #6. |
 | 44 | New commits in this repo use the GitHub no-reply email (set locally; the global git setting is unchanged). | Keeps the owner's Gmail address out of new public commits. Older commits still show it. |
 
+## Phase 4: authentication (all Assistant calls; the owner delegated the remaining choices on 2026-10-19)
+
+| # | Decision | Why |
+|---|---|---|
+| 45 | Passwords are hashed with PBKDF2-HMAC-SHA256: a random 16-byte salt per password, a 32-byte result, **600,000 iterations**, stored with each hash. About 243 ms per hash on the owner's PC. | OWASP's current figure for this algorithm. Storing the count lets it be raised later. Refines #5. (An earlier chat message said 210,000; that was wrong.) |
+| 46 | A new password must be 8 to 128 characters, not blank, and not equal to the login ID. No composition rules. | Length protects better than symbol rules; the 128 cap stops oversized input wasting hashing time. |
+| 47 | Sessions are a random 128-bit token held only in server memory, ending after 30 minutes without use. A password change ends the person's other sessions. A server restart logs everyone out. | Refines #32. |
+| 48 | A person still on a temporary password can only change it or log out. The server enforces this, not the GUI. | Otherwise a temporary password could be used forever (#28). |
+| 49 | An unknown ID and a wrong password give the same message ("Wrong ID or password.") and the same work: an unknown ID still does one full hash check. | Stops anyone listing which IC numbers exist, by message or by timing. |
+| 50 | No account lockout and no "forgot password" in this phase. | Lockout would lock out a lecturer who mistypes in a demo and lets anyone lock out a known ID on purpose; slow hashing already limits guessing. A lost password is fixed by HR issuing a new temporary one (Phase 5). Both go in the report as future work. |
+| 51 | The first HR account is created by `SeedHrMain`: hidden console prompt, or the environment variable `HRM_SEED_PASSWORD` where there is no console. | Implements #29. The password never appears on a command line. |
+| 52 | Starting the server now needs `HRM_DB_PASSWORD` as well as `HRM_KEYSTORE_PASSWORD`. `ping()` also checks the database. | "The server is up" should mean it can work. |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.

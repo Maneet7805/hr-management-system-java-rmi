@@ -53,6 +53,18 @@ mvn test "-Dhrm.skipDbTests=true"
 
 To create the tables in the development database `hrm`, run `com.bhel.hrm.server.db.DatabaseSetupMain` (it also needs `HRM_DB_PASSWORD`).
 
+### First run (from your IDE)
+
+Set these environment variables in the run configuration, never in a file: `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD`, and for the client `HRM_TRUSTSTORE_PASSWORD`.
+
+1. `scripts/generate-keys.bat` makes the development keystore and truststore.
+2. Copy `config/server.example.properties` to `config/server.properties` and `config/client.example.properties` to `config/client.properties`.
+3. Run `DatabaseSetupMain` to create the tables.
+4. Run `com.bhel.hrm.server.SeedHrMain` to create the first HR account. It asks for the name, IC/passport number and password (typed without echo). With no console, pass the three details as arguments and set `HRM_SEED_PASSWORD`.
+5. Run `com.bhel.hrm.server.HrmServerMain` to start the server, then `com.bhel.hrm.client.SmokeTestMain` to check the connection.
+
+Passwords are stored only as salted PBKDF2 hashes. An employee registered by HR gets a temporary password and must change it at first login.
+
 ## Project layout
 
 ```
