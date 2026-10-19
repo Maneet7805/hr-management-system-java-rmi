@@ -19,6 +19,10 @@ import com.bhel.hrm.net.TlsTestFiles.Identity;
 import com.bhel.hrm.server.HRMServiceImpl;
 import com.bhel.hrm.server.RmiServer;
 import com.bhel.hrm.server.ServerSettings;
+import com.bhel.hrm.server.security.SessionManager;
+import com.bhel.hrm.server.service.AuthService;
+import com.bhel.hrm.server.testsupport.CountingHasher;
+import com.bhel.hrm.server.testsupport.FakeDatabase;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -29,6 +33,7 @@ import java.nio.file.Path;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.time.Clock;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -57,7 +62,10 @@ class RmiOverTlsTest {
         int objectPort = TlsTestFiles.freePort();
         ServerSettings settings = new ServerSettings(registryPort, objectPort, serverIdentity.keyStore(),
                 PASSWORD, "localhost");
-        server = RmiServer.start(settings, new HRMServiceImpl());
+        // A stand-in database, so these tests of the secure connection do not need MySQL.
+        FakeDatabase database = new FakeDatabase();
+        AuthService auth = new AuthService(database, new CountingHasher(), new SessionManager(Clock.systemUTC()));
+        server = RmiServer.start(settings, new HRMServiceImpl(database, auth));
     }
 
     @AfterAll

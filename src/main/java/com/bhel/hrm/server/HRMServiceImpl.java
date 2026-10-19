@@ -1,6 +1,7 @@
 package com.bhel.hrm.server;
 
 import com.bhel.hrm.common.HRMService;
+import com.bhel.hrm.common.exception.HrmException;
 import com.bhel.hrm.common.exception.ServiceUnavailableException;
 import com.bhel.hrm.common.model.Employee;
 import com.bhel.hrm.common.model.FamilyMember;
@@ -10,35 +11,50 @@ import com.bhel.hrm.common.model.LeaveType;
 import com.bhel.hrm.common.model.RegistrationResult;
 import com.bhel.hrm.common.model.Session;
 import com.bhel.hrm.common.model.YearlyReport;
+import com.bhel.hrm.server.dao.DataAccessException;
+import com.bhel.hrm.server.dao.Database;
+import com.bhel.hrm.server.service.AuthService;
+import com.bhel.hrm.server.service.ServiceErrors;
 import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Walking-skeleton version of the service: it answers {@link #ping()} and nothing else, so the
- * secure connection can be proven before any business logic exists. Phases 4 and 5 replace each
- * "not implemented" method with the real one.
+ * The object clients call over RMI. Account methods are real; the employee and HR features are still
+ * "not implemented" and arrive in Phase 5.
  */
 public class HRMServiceImpl implements HRMService {
 
+    private final Database database;
+    private final AuthService auth;
+
+    public HRMServiceImpl(Database database, AuthService auth) {
+        this.database = database;
+        this.auth = auth;
+    }
+
+    /** Succeeds only if the database answers too, so "the server is up" really means it can work. */
     @Override
-    public void ping() {
-        // Reaching this line means the TLS connection and the RMI call both worked.
+    public void ping() throws ServiceUnavailableException {
+        try {
+            database.read(da -> da.employees().findById(0));
+        } catch (DataAccessException e) {
+            throw ServiceErrors.unavailable(e);
+        }
     }
 
     @Override
-    public Session login(String loginId, String password) throws ServiceUnavailableException {
-        throw notImplemented();
+    public Session login(String loginId, String password) throws HrmException {
+        return auth.login(loginId, password);
     }
 
     @Override
-    public void logout(String token) throws ServiceUnavailableException {
-        throw notImplemented();
+    public void logout(String token) {
+        auth.logout(token);
     }
 
     @Override
-    public void changePassword(String token, String oldPassword, String newPassword)
-            throws ServiceUnavailableException {
-        throw notImplemented();
+    public void changePassword(String token, String oldPassword, String newPassword) throws HrmException {
+        auth.changePassword(token, oldPassword, newPassword);
     }
 
     @Override
