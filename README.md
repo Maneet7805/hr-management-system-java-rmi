@@ -62,7 +62,7 @@ cd hr-management-system-java-rmi
 4. Set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD` and `HRM_TRUSTSTORE_PASSWORD` as environment variables.
 5. Create the database tables (see the last paragraph of [Running the tests](#running-the-tests)).
 
-Step-by-step instructions for starting the server and the client will be added when the service logic and Swing client are merged.
+To create the first HR account, start the server and check the connection, follow [First run](#first-run-from-your-ide). Instructions for the Swing client will be added when it is merged.
 
 ### Running the tests
 

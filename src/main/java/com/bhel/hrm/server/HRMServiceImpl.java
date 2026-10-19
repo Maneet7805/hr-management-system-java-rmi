@@ -14,6 +14,7 @@ import com.bhel.hrm.common.model.YearlyReport;
 import com.bhel.hrm.server.dao.DataAccessException;
 import com.bhel.hrm.server.dao.Database;
 import com.bhel.hrm.server.service.AuthService;
+import com.bhel.hrm.server.service.EmployeeService;
 import com.bhel.hrm.server.service.ServiceErrors;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,10 +27,12 @@ public class HRMServiceImpl implements HRMService {
 
     private final Database database;
     private final AuthService auth;
+    private final EmployeeService employees;
 
-    public HRMServiceImpl(Database database, AuthService auth) {
+    public HRMServiceImpl(Database database, AuthService auth, EmployeeService employees) {
         this.database = database;
         this.auth = auth;
+        this.employees = employees;
     }
 
     /** Succeeds only if the database answers too, so "the server is up" really means it can work. */
@@ -59,13 +62,13 @@ public class HRMServiceImpl implements HRMService {
 
     @Override
     public RegistrationResult registerEmployee(String token, String firstName, String lastName, String icPassport)
-            throws ServiceUnavailableException {
-        throw notImplemented();
+            throws HrmException {
+        return employees.registerEmployee(token, firstName, lastName, icPassport);
     }
 
     @Override
-    public List<Employee> listEmployees(String token) throws ServiceUnavailableException {
-        throw notImplemented();
+    public List<Employee> listEmployees(String token) throws HrmException {
+        return employees.listEmployees(token);
     }
 
     @Override
@@ -86,35 +89,35 @@ public class HRMServiceImpl implements HRMService {
     }
 
     @Override
-    public Employee getMyProfile(String token) throws ServiceUnavailableException {
-        throw notImplemented();
+    public Employee getMyProfile(String token) throws HrmException {
+        return employees.getMyProfile(token);
     }
 
     @Override
     public Employee updateMyContact(String token, String phone, String email, String address)
-            throws ServiceUnavailableException {
-        throw notImplemented();
+            throws HrmException {
+        return employees.updateMyContact(token, phone, email, address);
     }
 
     @Override
-    public List<FamilyMember> getMyFamily(String token) throws ServiceUnavailableException {
-        throw notImplemented();
+    public List<FamilyMember> getMyFamily(String token) throws HrmException {
+        return employees.getMyFamily(token);
     }
 
     @Override
     public FamilyMember addFamilyMember(String token, String name, String relationship, LocalDate dateOfBirth)
-            throws ServiceUnavailableException {
-        throw notImplemented();
+            throws HrmException {
+        return employees.addFamilyMember(token, name, relationship, dateOfBirth);
     }
 
     @Override
-    public FamilyMember updateFamilyMember(String token, FamilyMember member) throws ServiceUnavailableException {
-        throw notImplemented();
+    public FamilyMember updateFamilyMember(String token, FamilyMember member) throws HrmException {
+        return employees.updateFamilyMember(token, member);
     }
 
     @Override
-    public void removeFamilyMember(String token, long familyMemberId) throws ServiceUnavailableException {
-        throw notImplemented();
+    public void removeFamilyMember(String token, long familyMemberId) throws HrmException {
+        employees.removeFamilyMember(token, familyMemberId);
     }
 
     @Override
