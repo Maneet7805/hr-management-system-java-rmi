@@ -18,7 +18,7 @@ Work in progress. Updated as pull requests are merged.
 | RMI over TLS connection | Done |
 | Database schema and data-access layer (MySQL) | Done |
 | Service logic (login, employee registration, leave, yearly report) | Done |
-| Swing client (HR and employee screens) | In progress: login, password change and connection handling done; employee and HR screens next |
+| Swing client (HR and employee screens) | In progress: login, password change, connection handling and the employee screens (leave, details, family) done; HR screens next |
 | Test manual, use case diagram, demo walkthrough | Planned |
 
 ## Features
