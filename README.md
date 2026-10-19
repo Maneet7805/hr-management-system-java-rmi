@@ -44,7 +44,7 @@ Swing GUI client  --(RMI over TLS)-->  RMI server  --(JDBC)-->  Database
 
 - JDK 25 (LTS) or newer (any OS). Older Java will not build this project.
 - Apache Maven 3.9+ (NetBeans, IntelliJ and Eclipse can open the `pom.xml` directly)
-- MySQL (the database recommended in the team research; not final until the group agrees)
+- MySQL 8.4 (the team's chosen database, see DECISION.md)
 - Git
 
 ## Getting started
@@ -72,7 +72,7 @@ The manual steps below do the same things one by one, for other systems or for r
 4. Set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD` and `HRM_TRUSTSTORE_PASSWORD` as environment variables.
 5. Create the database tables (see the last paragraph of [Running the tests](#running-the-tests)).
 
-To create the first HR account, start the server and check the connection, follow [First run](#first-run-from-your-ide). Instructions for the Swing client will be added when it is merged.
+To create the first HR account, start the server and open the client, follow [Manual first run](#manual-first-run-for-example-from-an-ide).
 
 ### Running the tests
 
@@ -106,14 +106,17 @@ Passwords are stored only as salted PBKDF2 hashes. An employee registered by HR 
 ```
 pom.xml                          build file (Maven, Java 25)
 config/                          *.example.properties templates; real config and keystores are git-ignored
-scripts/                         generate-keys.sh / .bat: local TLS keystore and truststore
+scripts/                         generate-keys.sh / .bat (local TLS keys); setup.ps1, run.ps1, common.ps1 (used by setup.bat and run.bat)
+setup.bat, run.bat               one-time setup and everyday start (Windows)
 src/main/java/com/bhel/hrm/
   common/                        HRMService remote interface + model/ data classes (shared contract)
+  net/                           TLS and RMI helpers shared by client and server
   server/                        RMI server and HRMServiceImpl (business rules)
+    service/                       rules per area: auth, employees, leave, reports
     dao/                           data-access interfaces
     dao/jdbc/                      JDBC implementations
     db/                            connection setup
-    security/                      TLS, password hashing, deserialization filter
+    security/                      sessions, password hashing, deserialization filter
   client/                        client entry point and server connection
     ui/                            Swing screens
 src/main/resources/              SQL schema and other resources
@@ -122,6 +125,10 @@ docs/                            test manual and diagrams
 ```
 
 Secrets are never stored in files: set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD` and `HRM_TRUSTSTORE_PASSWORD` as environment variables.
+
+## Known gaps
+
+Open work is tracked in [GitHub issues](https://github.com/Maneet7805/hr-management-system-java-rmi/issues): client timeouts, HR password reset and employee edit/deactivate, running on two computers, macOS/Linux support, fault tolerance and the Payroll System.
 
 ## Documentation
 
