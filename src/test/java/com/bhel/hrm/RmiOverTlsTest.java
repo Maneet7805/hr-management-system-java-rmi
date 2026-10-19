@@ -11,6 +11,7 @@ import com.bhel.hrm.client.ClientSettings;
 import com.bhel.hrm.client.ServerConnection;
 import com.bhel.hrm.client.SmokeTestMain;
 import com.bhel.hrm.common.HRMService;
+import com.bhel.hrm.common.exception.InvalidCredentialsException;
 import com.bhel.hrm.common.exception.ServiceUnavailableException;
 import com.bhel.hrm.common.model.FamilyMember;
 import com.bhel.hrm.net.RmiNames;
@@ -21,6 +22,7 @@ import com.bhel.hrm.server.RmiServer;
 import com.bhel.hrm.server.ServerSettings;
 import com.bhel.hrm.server.security.SessionManager;
 import com.bhel.hrm.server.service.AuthService;
+import com.bhel.hrm.server.service.EmployeeService;
 import com.bhel.hrm.server.testsupport.CountingHasher;
 import com.bhel.hrm.server.testsupport.FakeDatabase;
 import java.io.ByteArrayOutputStream;
@@ -64,8 +66,10 @@ class RmiOverTlsTest {
                 PASSWORD, "localhost");
         // A stand-in database, so these tests of the secure connection do not need MySQL.
         FakeDatabase database = new FakeDatabase();
-        AuthService auth = new AuthService(database, new CountingHasher(), new SessionManager(Clock.systemUTC()));
-        server = RmiServer.start(settings, new HRMServiceImpl(database, auth));
+        CountingHasher hasher = new CountingHasher();
+        AuthService auth = new AuthService(database, hasher, new SessionManager(Clock.systemUTC()));
+        EmployeeService employees = new EmployeeService(database, hasher, auth);
+        server = RmiServer.start(settings, new HRMServiceImpl(database, auth, employees));
     }
 
     @AfterAll
@@ -148,15 +152,16 @@ class RmiOverTlsTest {
         assertTrue(error.getMessage().contains("missing.truststore"), error.getMessage());
     }
 
+    /** The data class is read through the server's filter and the service answers it: the session is unknown. */
     @Test
     void aContractDataClassPassesTheFilterAndReachesTheService() throws Exception {
         HRMService service = ServerConnection.connect(client("localhost", registryPort, serverIdentity.trustStore()));
         FamilyMember member = new FamilyMember(1L, "Bob Tan", "Spouse", null);
 
-        ServiceUnavailableException error = assertThrows(ServiceUnavailableException.class,
+        InvalidCredentialsException error = assertThrows(InvalidCredentialsException.class,
                 () -> service.updateFamilyMember("any-token", member));
 
-        assertEquals("Not implemented yet", error.getMessage());
+        assertEquals("Your session has expired. Please log in again.", error.getMessage());
     }
 
     @Test

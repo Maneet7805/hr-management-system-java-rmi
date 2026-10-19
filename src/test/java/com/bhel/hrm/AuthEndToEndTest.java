@@ -5,11 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bhel.hrm.client.ClientSettings;
 import com.bhel.hrm.client.ServerConnection;
 import com.bhel.hrm.common.HRMService;
 import com.bhel.hrm.common.exception.InvalidCredentialsException;
+import com.bhel.hrm.common.exception.PermissionDeniedException;
+import com.bhel.hrm.common.model.Employee;
+import com.bhel.hrm.common.model.FamilyMember;
+import com.bhel.hrm.common.model.RegistrationResult;
 import com.bhel.hrm.common.model.Role;
 import com.bhel.hrm.common.model.Session;
 import com.bhel.hrm.net.TlsTestFiles;
@@ -22,6 +27,7 @@ import com.bhel.hrm.server.security.PasswordHasher;
 import com.bhel.hrm.server.security.Pbkdf2PasswordHasher;
 import com.bhel.hrm.server.security.SessionManager;
 import com.bhel.hrm.server.service.AuthService;
+import com.bhel.hrm.server.service.EmployeeService;
 import com.bhel.hrm.server.service.HrSeeder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +37,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Arrays;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -64,7 +72,8 @@ class AuthEndToEndTest extends DatabaseTestBase {
         int objectPort = TlsTestFiles.freePort();
         AuthService auth = new AuthService(database, HASHER, new SessionManager(Clock.systemUTC()));
         server = RmiServer.start(new ServerSettings(registryPort, objectPort, identity.keyStore(),
-                TlsTestFiles.PASSWORD, "localhost"), new HRMServiceImpl(database, auth));
+                TlsTestFiles.PASSWORD, "localhost"),
+                new HRMServiceImpl(database, auth, new EmployeeService(database, HASHER, auth)));
     }
 
     @AfterAll
@@ -113,6 +122,28 @@ class AuthEndToEndTest extends DatabaseTestBase {
                 () -> service.login("NOBODY99", "not the password"));
 
         assertEquals(wrongPassword.getMessage(), unknownId.getMessage());
+    }
+
+    @Test
+    void hrRegistersAnEmployeeWhoThenChangesThePasswordAndKeepsTheirOwnDetails() throws Exception {
+        seedHr();
+        HRMService service = client();
+        String hr = service.login("HR900001", FIRST_PASSWORD).token();
+
+        RegistrationResult registered = service.registerEmployee(hr, "Alice", "Tan", "AB123456");
+        Session temporary = service.login("AB123456", registered.temporaryPassword());
+
+        assertTrue(temporary.mustChangePassword());
+        assertThrows(PermissionDeniedException.class, () -> service.getMyProfile(temporary.token()));
+
+        service.changePassword(temporary.token(), registered.temporaryPassword(), SECOND_PASSWORD);
+        Employee updated = service.updateMyContact(temporary.token(), "012-3456789", "alice@bhel.example", "1 Jalan Satu");
+        FamilyMember spouse = service.addFamilyMember(temporary.token(), "Bob Tan", "Spouse", LocalDate.of(1990, 5, 17));
+
+        assertEquals("012-3456789", updated.phone());
+        assertEquals(List.of(spouse), service.getMyFamily(temporary.token()));
+        assertThrows(PermissionDeniedException.class, () -> service.listEmployees(temporary.token()));
+        assertEquals(2, service.listEmployees(hr).size());
     }
 
     @Test
