@@ -21,7 +21,9 @@ Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Databa
 - `src/main/java/com/bhel/hrm/common/`: `HRMService` remote interface (extends `java.rmi.Remote`) and serializable data classes (`Employee`, `FamilyMember`, `LeaveApplication`, `YearlyReport`).
 - `src/main/java/com/bhel/hrm/server/`: RMI server, service logic, data access.
 - `src/main/java/com/bhel/hrm/client/`: Swing GUI in `ui/`. Screens: login, employee, HR.
-- Server sub-packages: `dao/` (interfaces), `dao/jdbc/` (implementations), `db/`, `security/`.
+- `src/main/java/com/bhel/hrm/net/`: shared TLS and RMI plumbing (`TlsClientSocketFactory`, `TlsContexts`, `RmiNames`).
+- Server sub-packages: `service/` (rules per area: auth, employees, leave, reports), `dao/` (interfaces), `dao/jdbc/` (implementations), `db/`, `security/` (sessions, hashing, deserialization filter).
+- `HRMServiceImpl` only delegates to the `service/` classes. Put rules in the services, not there.
 - Config lives in `config/*.example.properties`; secrets come from environment variables, never files.
 
 ## Rules for AI-assisted changes
@@ -31,13 +33,21 @@ Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Databa
 3. Server: any shared state must be thread-safe. Use `PreparedStatement` for all SQL. Never store or log plain-text passwords.
 4. Client: never call RMI methods on the Swing event thread; use `SwingWorker` and show a clear message when the server is unreachable.
 5. Never add secrets, keystores, or real personal data to the repo.
-6. Use Java 25 features at most; Swing only (no JavaFX).
+6. Use Java 25 features at most; Swing only (no JavaFX). Issue #27 plans to lower this to Java 21; check the open issues before using newer features.
 7. Keep code readable by students: small methods, clear names, comments that explain why.
 8. This is graded coursework with individual marks. Explain what you wrote so the author can describe it themselves. Do not generate report text for sections marked individual.
 
 ## Build and test
 
-Build, run and test commands will be filled in here once the first working version exists. The project uses Maven (Java 25): `mvn compile` to build, `mvn test` to run tests. Run commands will be added once the server and client have entry points.
+Maven, Java 25 (the `pom.xml` sets `maven.compiler.release`). Windows is the only fully scripted platform for now; macOS/Linux scripts are planned in issue #27.
+
+- Build: `mvn compile`
+- Test: `mvn test`. Database tests need MySQL, a `hrm_test` database, user `hrm_app` and env var `HRM_DB_PASSWORD`; without them they fail on purpose. Skip them deliberately with `mvn test "-Dhrm.skipDbTests=true"`.
+- Full check (what CI runs): `mvn --batch-mode verify`
+- First-time setup on Windows: `setup.bat`. Run everything: `run.bat` (starts MySQL, server and client).
+- Manual run (any OS, e.g. from an IDE): `scripts/generate-keys.sh|.bat`, then `DatabaseSetupMain`, `SeedHrMain`, `HrmServerMain`, `HrmClientMain`. Details in `README.md`.
+- Secrets come only from env vars: `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD`, `HRM_TRUSTSTORE_PASSWORD`.
+- Design decisions are logged in `DECISION.md`; add new ones there.
 
 ## Git conventions
 
