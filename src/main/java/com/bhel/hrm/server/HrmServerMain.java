@@ -1,5 +1,6 @@
 package com.bhel.hrm.server;
 
+import com.bhel.hrm.net.SettingsSupport;
 import com.bhel.hrm.server.dao.Database;
 import com.bhel.hrm.server.db.DbSettings;
 import com.bhel.hrm.server.db.JdbcDatabase;
@@ -49,7 +50,10 @@ public final class HrmServerMain {
             // Listed first: RemoteException is a kind of IOException, so it must be caught before it.
             System.out.println("Cannot start the server: a port may already be in use (" + e.getMessage() + ")");
             System.exit(1);
-        } catch (IOException | IllegalArgumentException | IllegalStateException e) {
+        } catch (IOException e) {
+            System.out.println("Cannot start the server. " + SettingsSupport.describeUnreadable(configFile, e));
+            System.exit(1);
+        } catch (IllegalArgumentException | IllegalStateException e) {
             System.out.println("Cannot start the server: " + e.getMessage());
             System.exit(1);
         }

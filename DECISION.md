@@ -124,6 +124,18 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 60 | Times (applied, decided) are the server's local time, cut to whole seconds, and carry no time zone. | The database stores whole seconds, so what is returned equals what is stored. A server in another zone would show its own local time. |
 | 61 | The yearly report is built in one transaction, so profile, family, applications and balances describe the same moment. | A report must not mix data from before and after a concurrent change. |
 
+## Phase 7a: Swing client foundation (all Assistant calls; the owner delegated the open choices on 2026-10-19)
+
+| # | Decision | Why |
+|---|---|---|
+| 62 | One window with swappable screens (`ScreenHost`), system look and feel, no extra library. Every visit to the login screen builds a fresh one. | Simpler to navigate and to test; nothing typed earlier is left for the next person. |
+| 63 | The client connects through `ResilientService`. Reads are tried up to 3 times (pauses 0.25 s then 0.5 s), looking the server up again each time. Writes are never repeated once the call was on its way; a write is repeated only when the connection could not be made at all. | The fault tolerance the brief asks for, without the risk of a duplicate leave application (#34). Shown to work against a real server that is stopped and restarted. |
+| 64 | Screens talk to the server only through `Tasks` (a `SwingWorker`): work off the event thread, callbacks on it. Tests check this for `Tasks` and for each screen. | CLAUDE.md rule 4: the window must never freeze. |
+| 65 | Server messages are shown as written. Network and program errors become fixed calm sentences ("The connection to the HR server was lost. If you were saving something, check whether it was saved before trying again."). Nothing technical reaches the screen. An expired session is recognised by the server's own wording, and a test keeps the two texts equal. | Usability, and honesty about writes that may or may not have been saved. |
+| 66 | Dates are typed as text in the form `yyyy-MM-dd`, with the format shown beside the field. | Swing has no standard calendar widget, and a third-party one would be a new dependency. (Used from slice 7b.) |
+| 67 | Hint text is dark grey (#505050, about 6:1 contrast). The theme's own "disabled" grey measured about 2.3:1. | Found by drawing the screens to images and looking at them. |
+| 68 | Screens are tested without a display: driven by code (type, click) and drawn to PNG files in `target/screens` (not committed). | Fast, works in CI, and the layout can still be inspected. |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.

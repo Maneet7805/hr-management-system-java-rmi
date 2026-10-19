@@ -18,7 +18,7 @@ Work in progress. Updated as pull requests are merged.
 | RMI over TLS connection | Done |
 | Database schema and data-access layer (MySQL) | Done |
 | Service logic (login, employee registration, leave, yearly report) | Done |
-| Swing client (HR and employee screens) | In progress |
+| Swing client (HR and employee screens) | In progress: login, password change and connection handling done; employee and HR screens next |
 | Test manual, use case diagram, demo walkthrough | Planned |
 
 ## Features
@@ -87,6 +87,7 @@ Set these environment variables in the run configuration, never in a file: `HRM_
 3. Run `DatabaseSetupMain` to create the tables.
 4. Run `com.bhel.hrm.server.SeedHrMain` to create the first HR account. It asks for the name, IC/passport number and password (typed without echo). With no console, pass the three details as arguments and set `HRM_SEED_PASSWORD`.
 5. Run `com.bhel.hrm.server.HrmServerMain` to start the server, then `com.bhel.hrm.client.SmokeTestMain` to check the connection.
+6. Run `com.bhel.hrm.client.HrmClientMain` to open the window and log in. If the server is not running yet, the login screen says so and you can try again; the client also retries by itself for a few seconds.
 
 Passwords are stored only as salted PBKDF2 hashes. An employee registered by HR gets a temporary password and must change it at first login.
 

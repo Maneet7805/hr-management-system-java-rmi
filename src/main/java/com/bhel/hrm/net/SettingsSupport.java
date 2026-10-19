@@ -1,5 +1,8 @@
 package com.bhel.hrm.net;
 
+import java.io.IOException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
 
@@ -55,4 +58,19 @@ public final class SettingsSupport {
         }
         return value;
     }
-}
+
+    /**
+     * A sentence for a settings file that could not be read. The most common first-run mistake is forgetting
+     * to copy the template, so a missing file says which template to copy.
+     */
+    public static String describeUnreadable(Path file, IOException problem) {
+        if (problem instanceof NoSuchFileException) {
+            String name = file.getFileName().toString();
+            String template = name.endsWith(".properties")
+                    ? name.substring(0, name.length() - ".properties".length()) + ".example.properties"
+                    : name + ".example";
+            return "The settings file " + file + " was not found. Copy config/" + template
+                    + " to that name and edit it.";
+        }
+        return "Cannot read the settings file " + file + ": " + problem.getMessage();
+    }}
