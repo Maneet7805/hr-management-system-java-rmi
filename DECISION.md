@@ -136,6 +136,18 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 67 | Hint text is dark grey (#505050, about 6:1 contrast). The theme's own "disabled" grey measured about 2.3:1. | Found by drawing the screens to images and looking at them. |
 | 68 | Screens are tested without a display: driven by code (type, click) and drawn to PNG files in `target/screens` (not committed). | Fast, works in CI, and the layout can still be inspected. |
 
+## Phase 7b: employee screens (all Assistant calls; the owner delegated the open choices on 2026-10-19)
+
+| # | Decision | Why |
+|---|---|---|
+| 69 | After login the window shows tabs. Employees get Leave (first, it is what they come for), My details and Family. HR staff get My details and Family now; the HR tabs arrive in slice 7c. | HR staff keep a profile and family like everyone but do not apply for leave (#25, #55). |
+| 70 | A person who is not on a temporary password can change their password from the home screen and press Cancel to go back. Someone on a temporary password sees only Log out. | A forced change must not be skippable (#48); a voluntary one should not trap anyone. |
+| 71 | Only removing a family member asks "are you sure?". Everything else can be corrected afterwards. | Confirmation dialogs for every action train people to click through them. |
+| 72 | When the server refuses something, the form keeps what was typed so it can be corrected. Fields are cleared only after success, and typed passwords are always cleared. | Retyping a whole leave request because of one wrong date is a usability failure. |
+| 73 | Tables are read-only; adding or changing happens in the form beside them. Column headings are installed explicitly. | Editing inside a table is easy to get wrong; the headings were missing from the drawn screens until this was made explicit. |
+| 74 | A leave request that is accepted says what was sent: "Application sent: 3 days of Annual leave, waiting for HR's decision." Pending days already show in the balance. | The person sees at once that it worked and what happens next. |
+| 75 | Dates are typed as yyyy-MM-dd and checked on the screen first; a wrong date is explained with an example and nothing is sent (decision #66). | Same wording everywhere, and no round trip for a typing mistake. |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.

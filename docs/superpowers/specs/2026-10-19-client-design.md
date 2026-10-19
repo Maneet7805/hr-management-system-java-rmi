@@ -2,6 +2,8 @@
 
 Status: **Approved by delegation** (the owner left the open choices to the assistant, 2026-10-19). Built in three slices, each its own pull request: **7a** foundation, **7b** employee screens, **7c** HR screens.
 
+**7b is built** on branch `feature/client-employee`: the home screen with tabs, "My details", "Family" (with a confirmation before removing) and "Leave" (balances, apply, my applications), a voluntary change-password path, display and date-input helpers, and 59 new tests (371 before, 430 now), including an end-to-end test that drives all three screens against the real server and database. Drawing the screens with realistic data showed missing table headings and a misaligned form; both are fixed (decisions #73, #72). Seven deliberate breaks (family member removed without asking, wrong date ignored, empty reason sent as text, balances not refreshed, details form usable before loading, HR staff given the leave tab, expired session ignored) each make a test fail. HR screens (7c) are next.
+
 **7a is built** on branch `feature/client-foundation`: `ResilientService`, `ErrorMessages`, `Tasks`, `ScreenHost`/`MainFrame`, login, change-password and a placeholder home screen, `HrmClientMain`, and 60 new tests (311 before, 371 now) (plus a real server stop-and-restart test and an end-to-end test of the screens against real MySQL). Results worth knowing:
 - Drawing the screens to images showed the grey hint text was too faint (about 2.3:1); it is now about 6:1 (decision #67).
 - Six deliberate breaks (server call on the event thread, writes retried, failed connection not forgotten, password confirmation skipped, typed password left on screen, expired session ignored) each make a test fail.

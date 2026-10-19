@@ -28,6 +28,7 @@ public final class ChangePasswordPanel extends JPanel {
     private final JPasswordField confirmField = new JPasswordField(18);
     private final JButton changeButton = new JButton("Change password");
     private final JButton logOutButton = new JButton("Log out");
+    private final JButton cancelButton = new JButton("Cancel");
     private final JTextArea statusText = Ui.statusLine();
 
     public ChangePasswordPanel(HRMService service, Navigator navigator, Session session) {
@@ -42,6 +43,10 @@ public final class ChangePasswordPanel extends JPanel {
         changeButton.addActionListener(e -> attemptChange());
         confirmField.addActionListener(e -> attemptChange());
         logOutButton.addActionListener(e -> logOut());
+        cancelButton.addActionListener(e -> navigator.showHome(session));
+        // Someone on a temporary password must replace it, so they can only log out. Anyone else may just go back.
+        logOutButton.setVisible(session.mustChangePassword());
+        cancelButton.setVisible(!session.mustChangePassword());
     }
 
     private void buildLayout() {
@@ -50,6 +55,7 @@ public final class ChangePasswordPanel extends JPanel {
         confirmField.getAccessibleContext().setAccessibleName("New password again");
         changeButton.setMnemonic('C');
         logOutButton.setMnemonic('O');
+        cancelButton.setMnemonic('X');
 
         GridBagConstraints c = Ui.cell(0, 0);
         c.gridwidth = 2;
@@ -72,6 +78,7 @@ public final class ChangePasswordPanel extends JPanel {
         c = Ui.cell(0, 8);
         c.gridwidth = 2;
         add(logOutButton, c);
+        add(cancelButton, c);
     }
 
     private void addRow(int row, String text, JPasswordField field, char mnemonic) {
@@ -142,6 +149,7 @@ public final class ChangePasswordPanel extends JPanel {
         confirmField.setEnabled(!busy);
         changeButton.setEnabled(!busy);
         logOutButton.setEnabled(!busy);
+        cancelButton.setEnabled(!busy);
         setCursor(busy ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
     }
 
@@ -167,6 +175,10 @@ public final class ChangePasswordPanel extends JPanel {
 
     JButton logOutButton() {
         return logOutButton;
+    }
+
+    JButton cancelButton() {
+        return cancelButton;
     }
 
     JTextArea statusText() {

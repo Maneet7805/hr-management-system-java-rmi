@@ -1,5 +1,6 @@
 package com.bhel.hrm.client.ui;
 
+import com.bhel.hrm.client.ErrorMessages;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -54,6 +55,35 @@ final class Ui {
     static void showInfo(JTextArea status, String message) {
         status.setForeground(UIManager.getColor("Label.foreground"));
         status.setText(message);
+    }
+
+    /**
+     * What every screen does when a server call fails: an expired session sends the person back to the login
+     * screen with an explanation; anything else is shown as a sentence on the screen's own status line.
+     */
+    static void handleFailure(Throwable failure, Navigator navigator, JTextArea status) {
+        if (ErrorMessages.isSessionExpired(failure)) {
+            navigator.showLogin(ErrorMessages.SESSION_EXPIRED);
+        } else {
+            showError(status, ErrorMessages.forUser(failure));
+        }
+    }
+
+    /** In a vertical box layout, components with different alignments end up centred or ragged. */
+    static <T extends javax.swing.JComponent> T leftAligned(T component) {
+        component.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+        return component;
+    }
+
+    /**
+     * A scroll pane around a table with the column headings showing. Swing normally adds the headings only once
+     * the window is on screen; adding them here means the screen is the same however and wherever it is built.
+     */
+    static javax.swing.JScrollPane scrollableTable(javax.swing.JTable table, int width, int height) {
+        javax.swing.JScrollPane scroll = new javax.swing.JScrollPane(table);
+        scroll.setColumnHeaderView(table.getTableHeader());
+        scroll.setPreferredSize(new java.awt.Dimension(width, height));
+        return scroll;
     }
 
     static GridBagConstraints cell(int column, int row) {

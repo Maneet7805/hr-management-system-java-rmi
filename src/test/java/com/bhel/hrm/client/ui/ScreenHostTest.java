@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bhel.hrm.client.ScriptedService;
+import com.bhel.hrm.client.StubService;
+import com.bhel.hrm.common.model.Employee;
 import com.bhel.hrm.common.model.Role;
 import com.bhel.hrm.common.model.Session;
 import javax.swing.JComponent;
@@ -19,6 +21,8 @@ class ScreenHostTest {
 
     private static final Session EMPLOYEE = new Session("token-1", 7L, "Alice Tan", Role.EMPLOYEE, false);
     private static final Session TEMPORARY = new Session("token-2", 8L, "Bob Lee", Role.EMPLOYEE, true);
+    private static final Employee ALICE = new Employee(7L, "Alice", "Tan", "AB123456", Role.EMPLOYEE,
+            null, null, null, false);
 
     private static JComponent shown(ScreenHost host) throws Exception {
         return onEdt(host::currentScreen);
@@ -33,7 +37,7 @@ class ScreenHostTest {
 
     @Test
     void theNavigatorShowsTheRequestedScreen() throws Exception {
-        ScreenHost host = onEdt(() -> new ScreenHost(new ScriptedService().service()));
+        ScreenHost host = onEdt(() -> new ScreenHost(StubService.forHome(ALICE).service()));
 
         onEdt(() -> host.showChangePassword(TEMPORARY));
         assertInstanceOf(ChangePasswordPanel.class, shown(host));
@@ -48,7 +52,7 @@ class ScreenHostTest {
 
     @Test
     void eachVisitToTheLoginScreenStartsWithEmptyFields() throws Exception {
-        ScreenHost host = onEdt(() -> new ScreenHost(new ScriptedService().service()));
+        ScreenHost host = onEdt(() -> new ScreenHost(StubService.forHome(ALICE).service()));
         LoginPanel first = (LoginPanel) shown(host);
         onEdt(() -> first.idField().setText("AB123456"));
 
@@ -62,7 +66,7 @@ class ScreenHostTest {
 
     @Test
     void aSuccessfulLoginThroughTheLoginScreenLeadsToTheHomeScreen() throws Exception {
-        ScreenHost host = onEdt(() -> new ScreenHost(new ScriptedService(EMPLOYEE).service()));
+        ScreenHost host = onEdt(() -> new ScreenHost(StubService.forHome(ALICE).returns("login", EMPLOYEE).service()));
         LoginPanel login = (LoginPanel) shown(host);
         onEdt(() -> {
             login.idField().setText("AB123456");
@@ -77,7 +81,7 @@ class ScreenHostTest {
 
     @Test
     void closingTheWindowEndsTheLoginOnTheServerOffTheEventThreadAndThenCarriesOn() throws Exception {
-        ScriptedService scripted = new ScriptedService((Object) null);
+        StubService scripted = StubService.forHome(ALICE);
         ScreenHost host = onEdt(() -> new ScreenHost(scripted.service()));
         onEdt(() -> host.showHome(EMPLOYEE));
         java.util.concurrent.atomic.AtomicBoolean closed = new java.util.concurrent.atomic.AtomicBoolean();
@@ -85,7 +89,7 @@ class ScreenHostTest {
         onEdt(() -> host.endSession(() -> closed.set(true)));
         awaitTrue("window closed", closed::get);
 
-        assertEquals(java.util.List.of("logout"), scripted.methodsCalled());
+        assertEquals(1, scripted.count("logout"));
         assertEquals(0, scripted.callsOnEventThread());
     }
 
@@ -103,7 +107,7 @@ class ScreenHostTest {
 
     @Test
     void logOutFromTheHomeScreenReturnsToTheLoginScreen() throws Exception {
-        ScreenHost host = onEdt(() -> new ScreenHost(new ScriptedService((Object) null).service()));
+        ScreenHost host = onEdt(() -> new ScreenHost(StubService.forHome(ALICE).service()));
         onEdt(() -> host.showHome(EMPLOYEE));
         HomePanel home = (HomePanel) shown(host);
 

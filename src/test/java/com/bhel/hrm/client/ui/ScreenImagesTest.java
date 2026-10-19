@@ -1,10 +1,18 @@
 package com.bhel.hrm.client.ui;
 
+import static com.bhel.hrm.client.ui.SwingTestSupport.awaitTrue;
 import static com.bhel.hrm.client.ui.SwingTestSupport.onEdt;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bhel.hrm.client.ScriptedService;
+import com.bhel.hrm.client.StubService;
 import com.bhel.hrm.common.exception.InvalidCredentialsException;
+import com.bhel.hrm.common.model.Employee;
+import com.bhel.hrm.common.model.FamilyMember;
+import com.bhel.hrm.common.model.LeaveApplication;
+import com.bhel.hrm.common.model.LeaveBalance;
+import com.bhel.hrm.common.model.LeaveStatus;
+import com.bhel.hrm.common.model.LeaveType;
 import com.bhel.hrm.common.model.Role;
 import com.bhel.hrm.common.model.Session;
 import java.awt.Color;
@@ -16,7 +24,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.imageio.ImageIO;
 import javax.swing.JComponent;
@@ -31,6 +42,37 @@ class ScreenImagesTest {
     private static final Path OUTPUT = Path.of("target", "screens");
     private static final Session TEMPORARY = new Session("t", 8L, "Bob Lee", Role.EMPLOYEE, true);
     private static final Session EMPLOYEE = new Session("t", 7L, "Alice Tan", Role.EMPLOYEE, false);
+
+    private static final Employee ALICE = new Employee(7L, "Alice", "Tan", "900101-14-5678", Role.EMPLOYEE,
+            "012-3456789", "alice@bhel.example", "1 Jalan Satu, Taman Setia, 47500 Subang Jaya", false);
+    private static final LeaveType ANNUAL = new LeaveType(1L, "Annual", 14);
+    private static final LeaveType MEDICAL = new LeaveType(2L, "Medical", 14);
+    private static final LeaveType EMERGENCY = new LeaveType(3L, "Emergency", 3);
+    private static final LeaveType UNPAID = new LeaveType(4L, "Unpaid", null);
+
+    private static StubService sampleServer() {
+        int year = LocalDate.now().getYear();
+        return StubService.forHome(ALICE)
+                .returns("getMyFamily", List.of(
+                        new FamilyMember(1L, "Bob Tan", "Spouse", LocalDate.of(1990, 5, 17)),
+                        new FamilyMember(2L, "Cara Tan", "Child", LocalDate.of(2018, 9, 2)),
+                        new FamilyMember(3L, "Mei Lin Tan", "Parent", null)))
+                .returns("getLeaveTypes", List.of(ANNUAL, MEDICAL, EMERGENCY, UNPAID))
+                .returns("getMyLeaveBalances", List.of(
+                        new LeaveBalance(ANNUAL, year, 3, 2),
+                        new LeaveBalance(MEDICAL, year, 0, 0),
+                        new LeaveBalance(EMERGENCY, year, 1, 0),
+                        new LeaveBalance(UNPAID, year, 5, 0)))
+                .returns("getMyLeaveApplications", List.of(
+                        new LeaveApplication(3L, 7L, "Alice Tan", ANNUAL, LocalDate.of(year, 6, 1), LocalDate.of(year, 6, 2), 2,
+                                "School holiday", LeaveStatus.PENDING, LocalDateTime.of(year, 5, 20, 9, 15), null),
+                        new LeaveApplication(2L, 7L, "Alice Tan", ANNUAL, LocalDate.of(year, 3, 10), LocalDate.of(year, 3, 12), 3,
+                                "Family trip", LeaveStatus.APPROVED, LocalDateTime.of(year, 3, 1, 9, 0),
+                                LocalDateTime.of(year, 3, 2, 14, 30)),
+                        new LeaveApplication(1L, 7L, "Alice Tan", MEDICAL, LocalDate.of(year, 2, 5), LocalDate.of(year, 2, 5), 1,
+                                null, LeaveStatus.REJECTED, LocalDateTime.of(year, 2, 6, 8, 0),
+                                LocalDateTime.of(year, 2, 6, 16, 45))));
+    }
 
     private static Path draw(String name, JComponent screen, int width, int height) throws Exception {
         Files.createDirectories(OUTPUT);
@@ -99,10 +141,64 @@ class ScreenImagesTest {
     }
 
     @Test
-    void homeScreen() throws Exception {
-        HomePanel panel = onEdt(() -> new HomePanel(new ScriptedService().service(),
+    void myDetailsScreen() throws Exception {
+        ProfilePanel panel = onEdt(() -> new ProfilePanel(sampleServer().service(),
                 new SwingTestSupport.RecordingNavigator(), EMPLOYEE));
+        awaitTrue("details loaded", () -> panel.saveButton().isEnabled());
 
-        assertSomethingWasDrawn(draw("home", panel, 640, 320));
+        assertSomethingWasDrawn(draw("my-details", panel, 900, 420));
+    }
+
+    @Test
+    void familyScreen() throws Exception {
+        FamilyPanel panel = onEdt(() -> new FamilyPanel(sampleServer().service(),
+                new SwingTestSupport.RecordingNavigator(), EMPLOYEE, question -> true));
+        awaitTrue("family loaded", () -> panel.table().getRowCount() == 3);
+        onEdt(() -> panel.table().setRowSelectionInterval(0, 0));
+
+        assertSomethingWasDrawn(draw("family", panel, 900, 480));
+    }
+
+    @Test
+    void leaveScreen() throws Exception {
+        LeavePanel panel = onEdt(() -> new LeavePanel(sampleServer().service(),
+                new SwingTestSupport.RecordingNavigator(), EMPLOYEE));
+        awaitTrue("leave loaded", () -> panel.balancesTable().getRowCount() == 4
+                && panel.applicationsTable().getRowCount() == 3 && panel.typeCombo().getItemCount() == 4);
+        onEdt(() -> {
+            panel.startField().setText("2026-08-03");
+            panel.endField().setText("2026-08-05");
+            panel.reasonField().setText("Visiting family");
+        });
+
+        assertSomethingWasDrawn(draw("leave", panel, 900, 640));
+    }
+
+    @Test
+    void leaveScreenWithARefusal() throws Exception {
+        LeavePanel panel = onEdt(() -> new LeavePanel(sampleServer().returns("applyForLeave",
+                new com.bhel.hrm.common.exception.ValidationException(
+                        "Not enough Annual leave left: 9 day(s) remaining, 15 requested.")).service(),
+                new SwingTestSupport.RecordingNavigator(), EMPLOYEE));
+        awaitTrue("leave loaded", () -> panel.balancesTable().getRowCount() == 4);
+        onEdt(() -> {
+            panel.startField().setText("2026-08-03");
+            panel.endField().setText("2026-08-17");
+            panel.applyButton().doClick();
+        });
+        awaitTrue("the refusal", () -> panel.statusText().getText().startsWith("Not enough"));
+
+        assertSomethingWasDrawn(draw("leave-refused", panel, 900, 640));
+    }
+
+    @Test
+    void homeScreenOfAnEmployee() throws Exception {
+        HomePanel panel = onEdt(() -> new HomePanel(sampleServer().service(),
+                new SwingTestSupport.RecordingNavigator(), EMPLOYEE));
+        LeavePanel leave = (LeavePanel) onEdt(() -> panel.tabs().getComponentAt(0));
+        awaitTrue("leave loaded", () -> leave.balancesTable().getRowCount() == 4
+                && leave.applicationsTable().getRowCount() == 3);
+
+        assertSomethingWasDrawn(draw("home-employee", panel, 960, 700));
     }
 }
