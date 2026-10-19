@@ -156,4 +156,36 @@ class ChangePasswordPanelTest {
         assertEquals(java.util.List.of("logout"), scripted.methodsCalled());
         assertNull(navigator.loginMessage);
     }
+
+    // ---- a person who is not on a temporary password may change the password and walk away ----
+
+    private static final Session NORMAL = new Session("token-3", 7L, "Alice Tan", Role.EMPLOYEE, false);
+
+    @Test
+    void whenChangingByChoiceThereIsACancelButtonAndNoTemporaryPasswordNotice() throws Exception {
+        ChangePasswordPanel panel = onEdt(() -> new ChangePasswordPanel(new ScriptedService().service(), navigator, NORMAL));
+
+        assertFalse(onEdt(() -> panel.noticeLabel().getText()).contains("temporary"));
+        assertTrue(onEdt(() -> panel.cancelButton().isVisible()));
+        assertFalse(onEdt(() -> panel.logOutButton().isVisible()), "log out is only offered when a change is forced");
+    }
+
+    @Test
+    void cancelReturnsToTheHomeScreenWithoutCallingTheServer() throws Exception {
+        ScriptedService scripted = new ScriptedService();
+        ChangePasswordPanel panel = onEdt(() -> new ChangePasswordPanel(scripted.service(), navigator, NORMAL));
+
+        onEdt(() -> panel.cancelButton().doClick());
+
+        assertEquals(NORMAL, navigator.homeFor);
+        assertEquals(0, scripted.calls());
+    }
+
+    @Test
+    void whenTheChangeIsForcedThereIsNoCancelButton() throws Exception {
+        ChangePasswordPanel panel = panelFor(new ScriptedService());
+
+        assertFalse(onEdt(() -> panel.cancelButton().isVisible()), "a temporary password must be replaced");
+        assertTrue(onEdt(() -> panel.logOutButton().isVisible()));
+    }
 }

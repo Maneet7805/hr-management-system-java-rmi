@@ -131,4 +131,75 @@ class ClientEndToEndTest extends DatabaseTestBase {
         // The new password really is the one in use now.
         assertEquals("Alice Tan", newClient().login("AB123456", "My own passphrase").displayName());
     }
-}
+
+    @Test
+    void anEmployeeKeepsTheirDetailsAndAppliesForLeaveThroughTheScreens() throws Exception {
+        new HrSeeder(database, HASHER).createHr("Hana", "Lim", "HR900001", "An HR passphrase");
+        HRMService admin = newClient();
+        String hrToken = admin.login("HR900001", "An HR passphrase").token();
+        RegistrationResult registered = admin.registerEmployee(hrToken, "Alice", "Tan", "AB123456");
+        int year = java.time.LocalDate.now().getYear();
+
+        ScreenHost host = onEdt(() -> new ScreenHost(newClient()));
+        logInThroughTheScreen(host, "AB123456", registered.temporaryPassword());
+        awaitTrue("change password screen", () -> host.currentScreen() instanceof ChangePasswordPanel);
+        ChangePasswordPanel change = (ChangePasswordPanel) onEdt(host::currentScreen);
+        onEdt(() -> {
+            change.currentField().setText(registered.temporaryPassword());
+            change.newField().setText("My own passphrase");
+            change.confirmField().setText("My own passphrase");
+            change.changeButton().doClick();
+        });
+        awaitTrue("home screen", () -> host.currentScreen() instanceof HomePanel);
+        HomePanel home = (HomePanel) onEdt(host::currentScreen);
+        LeavePanel leave = (LeavePanel) onEdt(() -> home.tabs().getComponentAt(0));
+        ProfilePanel profile = (ProfilePanel) onEdt(() -> home.tabs().getComponentAt(1));
+        FamilyPanel family = (FamilyPanel) onEdt(() -> home.tabs().getComponentAt(2));
+
+        // My details
+        awaitTrue("details loaded", () -> profile.saveButton().isEnabled());
+        assertEquals("Alice Tan", onEdt(() -> profile.nameLabel().getText()));
+        onEdt(() -> {
+            profile.phoneField().setText("012-3456789");
+            profile.emailField().setText("alice@bhel.example");
+            profile.addressField().setText("1 Jalan Satu");
+            profile.saveButton().doClick();
+        });
+        awaitTrue("details saved", () -> profile.statusText().getText().equals("Saved."));
+
+        // Family
+        onEdt(() -> {
+            family.nameField().setText("Bob Tan");
+            family.relationshipField().setText("Spouse");
+            family.dobField().setText("1990-05-17");
+            family.addButton().doClick();
+        });
+        awaitTrue("family member listed", () -> family.table().getRowCount() == 1);
+
+        // Leave: first too many days, then a good request
+        awaitTrue("leave loaded", () -> leave.typeCombo().getItemCount() == 4 && leave.balancesTable().getRowCount() == 4);
+        onEdt(() -> {
+            leave.startField().setText(year + "-01-01");
+            leave.endField().setText(year + "-01-20");
+            leave.applyButton().doClick();
+        });
+        awaitTrue("the refusal", () -> leave.statusText().getText().startsWith("Not enough Annual leave left"));
+        onEdt(() -> {
+            leave.startField().setText(year + "-03-10");
+            leave.endField().setText(year + "-03-12");
+            leave.reasonField().setText("Family trip");
+            leave.applyButton().doClick();
+        });
+        awaitTrue("application listed", () -> leave.applicationsTable().getRowCount() == 1);
+
+        assertEquals("Application sent: 3 days of Annual leave, waiting for HR's decision.",
+                onEdt(() -> leave.statusText().getText()));
+        awaitTrue("balance updated", () -> "11".equals(leave.balancesTable().getValueAt(0, 4)));
+        // The server really has all of it.
+        assertEquals("012-3456789", admin.listEmployees(hrToken).stream()
+                .filter(e -> e.icPassport().equals("AB123456")).findFirst().orElseThrow().phone());
+        var pending = admin.listPendingLeave(hrToken);
+        assertEquals(1, pending.size());
+        assertEquals("Alice Tan", pending.get(0).employeeName());
+        assertEquals("Family trip", pending.get(0).reason());
+    }}

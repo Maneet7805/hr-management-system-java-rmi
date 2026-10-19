@@ -3,15 +3,17 @@ package com.bhel.hrm.client.ui;
 import com.bhel.hrm.common.HRMService;
 import com.bhel.hrm.common.model.Role;
 import com.bhel.hrm.common.model.Session;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTabbedPane;
 
 /**
- * The screen after login. For now it only welcomes the person and offers Log out; the employee screens
- * (slice 7b) and the HR screens (slice 7c) replace the placeholder text.
+ * The screen after login: who you are, buttons to change your password or log out, and the tabs for what
+ * you can do. Everyone has "My details" and "Family". Employees also have "Leave" (first, because it is what
+ * they come for). The HR tabs are added in slice 7c.
  */
 public final class HomePanel extends JPanel {
 
@@ -19,26 +21,39 @@ public final class HomePanel extends JPanel {
     private final Navigator navigator;
     private final Session session;
     private final JLabel welcomeLabel;
+    private final JButton changePasswordButton = new JButton("Change password");
     private final JButton logOutButton = new JButton("Log out");
+    private final JTabbedPane tabs = new JTabbedPane();
 
     public HomePanel(HRMService service, Navigator navigator, Session session) {
-        super(new GridBagLayout());
+        super(new BorderLayout(8, 8));
         this.service = service;
         this.navigator = navigator;
         this.session = session;
-        this.welcomeLabel = new JLabel("Welcome, " + session.displayName() + " (" + describe(session.role()) + ")");
+        this.welcomeLabel = new JLabel("Welcome, " + session.displayName() + " (" + Display.role(session.role()) + ")");
 
+        changePasswordButton.setMnemonic('C');
         logOutButton.setMnemonic('L');
-        GridBagConstraints c = Ui.cell(0, 0);
-        add(Ui.title("BHEL HR Management System"), c);
-        add(welcomeLabel, Ui.cell(0, 1));
-        add(Ui.hint("Your screens will appear here."), Ui.cell(0, 2));
-        add(logOutButton, Ui.cell(0, 3));
-        logOutButton.addActionListener(e -> logOut());
-    }
+        welcomeLabel.setFont(welcomeLabel.getFont().deriveFont(java.awt.Font.BOLD));
+        JPanel header = new JPanel(new BorderLayout());
+        header.add(welcomeLabel, BorderLayout.WEST);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        buttons.add(changePasswordButton);
+        buttons.add(logOutButton);
+        header.add(buttons, BorderLayout.EAST);
 
-    private static String describe(Role role) {
-        return role == Role.HR ? "HR staff" : "Employee";
+        if (session.role() == Role.EMPLOYEE) {
+            tabs.addTab("Leave", new LeavePanel(service, navigator, session));
+        }
+        tabs.addTab("My details", new ProfilePanel(service, navigator, session));
+        tabs.addTab("Family", new FamilyPanel(service, navigator, session, Confirmer.dialog(this)));
+
+        add(header, BorderLayout.NORTH);
+        add(tabs, BorderLayout.CENTER);
+        setBorder(javax.swing.BorderFactory.createEmptyBorder(8, 12, 8, 12));
+
+        changePasswordButton.addActionListener(e -> navigator.showChangePassword(session));
+        logOutButton.addActionListener(e -> logOut());
     }
 
     private void logOut() {
@@ -54,7 +69,15 @@ public final class HomePanel extends JPanel {
         return welcomeLabel;
     }
 
+    JButton changePasswordButton() {
+        return changePasswordButton;
+    }
+
     JButton logOutButton() {
         return logOutButton;
+    }
+
+    JTabbedPane tabs() {
+        return tabs;
     }
 }
