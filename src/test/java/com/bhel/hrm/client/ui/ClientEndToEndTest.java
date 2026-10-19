@@ -11,6 +11,7 @@ import com.bhel.hrm.client.ResilientService;
 import com.bhel.hrm.client.ServerConnection;
 import com.bhel.hrm.common.HRMService;
 import com.bhel.hrm.common.model.RegistrationResult;
+import com.bhel.hrm.common.model.Session;
 import com.bhel.hrm.net.TlsTestFiles;
 import com.bhel.hrm.net.TlsTestFiles.Identity;
 import com.bhel.hrm.server.HRMServiceImpl;
@@ -202,4 +203,70 @@ class ClientEndToEndTest extends DatabaseTestBase {
         assertEquals(1, pending.size());
         assertEquals("Alice Tan", pending.get(0).employeeName());
         assertEquals("Family trip", pending.get(0).reason());
+    }
+
+    @Test
+    void hrRegistersAnEmployeeDecidesTheirLeaveAndReportsOnItThroughTheScreens(@TempDir Path reportDir) throws Exception {
+        new HrSeeder(database, HASHER).createHr("Hana", "Lim", "HR900001", "An HR passphrase");
+        HRMService hr = newClient();
+        Session hrSession = hr.login("HR900001", "An HR passphrase");
+        SwingTestSupport.RecordingNavigator navigator = new SwingTestSupport.RecordingNavigator();
+        int year = java.time.LocalDate.now().getYear();
+
+        // HR registers an employee on the Employees screen and is shown the temporary password once.
+        StubClipboard clipboard = new StubClipboard();
+        EmployeesPanel employees = onEdt(() -> new EmployeesPanel(hr, navigator, hrSession, clipboard));
+        awaitTrue("employees loaded", () -> employees.table().getRowCount() == 1);
+        onEdt(() -> {
+            employees.firstNameField().setText("Alice");
+            employees.lastNameField().setText("Tan");
+            employees.icField().setText("AB123456");
+            employees.registerButton().doClick();
+        });
+        awaitTrue("temporary password shown", () -> employees.passwordPanel().isVisible());
+        String temporary = onEdt(() -> employees.passwordField().getText());
+        awaitTrue("two employees listed", () -> employees.table().getRowCount() == 2);
+        assertEquals(12, temporary.length());
+
+        // The employee uses it, chooses their own password and applies for leave (through the service).
+        HRMService alice = newClient();
+        Session aliceSession = alice.login("AB123456", temporary);
+        assertTrue(aliceSession.mustChangePassword());
+        alice.changePassword(aliceSession.token(), temporary, "My own passphrase");
+        alice.applyForLeave(aliceSession.token(), 1L, java.time.LocalDate.of(year, 3, 10),
+                java.time.LocalDate.of(year, 3, 12), "Family trip");
+
+        // HR sees the request on the Leave requests screen and approves it after confirming.
+        StubConfirmer yes = new StubConfirmer(true);
+        PendingLeavePanel pending = onEdt(() -> new PendingLeavePanel(hr, navigator, hrSession, yes));
+        awaitTrue("one request waiting", () -> pending.table().getRowCount() == 1);
+        assertEquals("Alice Tan", onEdt(() -> pending.table().getValueAt(0, 0)));
+        onEdt(() -> {
+            pending.table().setRowSelectionInterval(0, 0);
+            pending.approveButton().doClick();
+        });
+        awaitTrue("nothing waiting any more", () -> pending.emptyLabel().isVisible());
+        assertTrue(onEdt(() -> pending.statusText().getText()).startsWith("Approved Alice Tan's Annual leave"));
+        assertEquals(1, yes.questions().size());
+
+        // The yearly report shows it and can be saved as a file.
+        Path file = reportDir.resolve("report.txt");
+        ReportPanel report = onEdt(() -> new ReportPanel(hr, navigator, hrSession, new StubFileSaver(file)));
+        awaitTrue("employees to choose from", () -> report.employeeCombo().getItemCount() == 2);
+        onEdt(() -> {
+            for (int i = 0; i < report.employeeCombo().getItemCount(); i++) {
+                if (report.employeeCombo().getItemAt(i).icPassport().equals("AB123456")) {
+                    report.employeeCombo().setSelectedIndex(i);
+                }
+            }
+            report.generateButton().doClick();
+        });
+        awaitTrue("report shown", () -> report.reportText().getText().startsWith("YEARLY REPORT " + year));
+        String text = onEdt(() -> report.reportText().getText());
+        assertTrue(text.contains("Alice Tan"), text);
+        assertTrue(text.contains("Approved"), text);
+        assertTrue(text.contains("Family trip"), text);
+        onEdt(() -> report.saveButton().doClick());
+        awaitTrue("saved", () -> report.statusText().getText().startsWith("Saved to"));
+        assertEquals(text, java.nio.file.Files.readString(file));
     }}

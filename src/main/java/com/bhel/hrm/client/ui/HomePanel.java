@@ -13,7 +13,8 @@ import javax.swing.JTabbedPane;
 /**
  * The screen after login: who you are, buttons to change your password or log out, and the tabs for what
  * you can do. Everyone has "My details" and "Family". Employees also have "Leave" (first, because it is what
- * they come for). The HR tabs are added in slice 7c.
+ * they come for). HR staff have "Employees", "Leave requests" and "Yearly report" first instead, because they do
+ * not apply for leave themselves.
  */
 public final class HomePanel extends JPanel {
 
@@ -42,7 +43,11 @@ public final class HomePanel extends JPanel {
         buttons.add(logOutButton);
         header.add(buttons, BorderLayout.EAST);
 
-        if (session.role() == Role.EMPLOYEE) {
+        if (session.role() == Role.HR) {
+            tabs.addTab("Employees", new EmployeesPanel(service, navigator, session, ClipboardWriter.system()));
+            tabs.addTab("Leave requests", new PendingLeavePanel(service, navigator, session, Confirmer.dialog(this)));
+            tabs.addTab("Yearly report", new ReportPanel(service, navigator, session, FileSaver.dialog(this)));
+        } else {
             tabs.addTab("Leave", new LeavePanel(service, navigator, session));
         }
         tabs.addTab("My details", new ProfilePanel(service, navigator, session));
