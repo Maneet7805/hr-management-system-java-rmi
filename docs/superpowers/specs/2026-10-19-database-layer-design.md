@@ -1,6 +1,8 @@
 # Phase 3: Database layer design
 
-Status: **Approved by owner. Part 3a built on branch `feature/database-core`** (2026-10-19); part 3b (family and leave application DAOs) is next.
+Status: **Approved by owner. Part 3a merged (PR #7); part 3b built on branch `feature/database-leave-family`** (2026-10-19): `FamilyMemberDao`, `LeaveApplicationDao`, `NewLeaveApplication` and their tests. Phase 3 is complete once 3b is merged.
+
+Part 3b differs from the design in one place: `LeaveApplicationDao` has no `lockById`. `decide` changes the row only while it is still PENDING, in a single statement, so deciding needs no separate lock (a test with two simultaneous deciders confirms exactly one wins). The apply-leave rule (#20) locks the employee row instead, which `EmployeeDao.lockById` already does.
 
 Part 3a contains: settings, `Database`/`DataAccess`/`Work`, the complete schema (all four tables), `SchemaInstaller`, `DatabaseSetupMain`, `EmployeeDao` and `LeaveTypeDao`, and their tests.
 

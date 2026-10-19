@@ -5,5 +5,9 @@ public interface DataAccess {
 
     EmployeeDao employees();
 
+    FamilyMemberDao family();
+
     LeaveTypeDao leaveTypes();
+
+    LeaveApplicationDao leave();
 }
