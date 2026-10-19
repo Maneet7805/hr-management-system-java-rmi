@@ -12,11 +12,15 @@ import com.bhel.hrm.client.ServerConnection;
 import com.bhel.hrm.common.HRMService;
 import com.bhel.hrm.common.exception.InvalidCredentialsException;
 import com.bhel.hrm.common.exception.PermissionDeniedException;
+import com.bhel.hrm.common.exception.ValidationException;
 import com.bhel.hrm.common.model.Employee;
 import com.bhel.hrm.common.model.FamilyMember;
+import com.bhel.hrm.common.model.LeaveApplication;
+import com.bhel.hrm.common.model.LeaveStatus;
 import com.bhel.hrm.common.model.RegistrationResult;
 import com.bhel.hrm.common.model.Role;
 import com.bhel.hrm.common.model.Session;
+import com.bhel.hrm.common.model.YearlyReport;
 import com.bhel.hrm.net.TlsTestFiles;
 import com.bhel.hrm.net.TlsTestFiles.Identity;
 import com.bhel.hrm.server.HRMServiceImpl;
@@ -28,6 +32,8 @@ import com.bhel.hrm.server.security.Pbkdf2PasswordHasher;
 import com.bhel.hrm.server.security.SessionManager;
 import com.bhel.hrm.server.service.AuthService;
 import com.bhel.hrm.server.service.EmployeeService;
+import com.bhel.hrm.server.service.LeaveService;
+import com.bhel.hrm.server.service.ReportService;
 import com.bhel.hrm.server.service.HrSeeder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -73,7 +79,8 @@ class AuthEndToEndTest extends DatabaseTestBase {
         AuthService auth = new AuthService(database, HASHER, new SessionManager(Clock.systemUTC()));
         server = RmiServer.start(new ServerSettings(registryPort, objectPort, identity.keyStore(),
                 TlsTestFiles.PASSWORD, "localhost"),
-                new HRMServiceImpl(database, auth, new EmployeeService(database, HASHER, auth)));
+                new HRMServiceImpl(database, auth, new EmployeeService(database, HASHER, auth),
+                        new LeaveService(database, auth, Clock.systemDefaultZone()), new ReportService(database, auth)));
     }
 
     @AfterAll
@@ -146,6 +153,33 @@ class AuthEndToEndTest extends DatabaseTestBase {
         assertEquals(2, service.listEmployees(hr).size());
     }
 
+    @Test
+    void anEmployeeAppliesForLeaveHrApprovesItAndTheYearlyReportShowsIt() throws Exception {
+        seedHr();
+        HRMService service = client();
+        String hr = service.login("HR900001", FIRST_PASSWORD).token();
+        RegistrationResult registered = service.registerEmployee(hr, "Alice", "Tan", "AB123456");
+        Session alice = service.login("AB123456", registered.temporaryPassword());
+        service.changePassword(alice.token(), registered.temporaryPassword(), SECOND_PASSWORD);
+        int year = LocalDate.now().getYear();
+
+        LeaveApplication applied = service.applyForLeave(alice.token(), 1L,
+                LocalDate.of(year, 3, 10), LocalDate.of(year, 3, 12), "Family trip");
+
+        assertEquals(LeaveStatus.PENDING, applied.status());
+        assertEquals(11, service.getMyLeaveBalances(alice.token(), year).get(0).remaining());
+        assertEquals(List.of(applied.id()), service.listPendingLeave(hr).stream().map(LeaveApplication::id).toList());
+
+        LeaveApplication approved = service.decideLeave(hr, applied.id(), true);
+        YearlyReport report = service.generateYearlyReport(hr, alice.employeeId(), year);
+
+        assertEquals(LeaveStatus.APPROVED, approved.status());
+        assertEquals(List.of(approved), report.leaveApplications());
+        assertEquals(3, report.balances().get(0).approvedDays());
+        assertThrows(ValidationException.class, () -> service.decideLeave(hr, applied.id(), false));
+        assertThrows(PermissionDeniedException.class,
+                () -> service.generateYearlyReport(alice.token(), alice.employeeId(), year));
+    }
     @Test
     void theDatabaseHoldsAHashAndNeverThePassword() throws Exception {
         seedHr();

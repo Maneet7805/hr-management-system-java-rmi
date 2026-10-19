@@ -21,6 +21,8 @@ public abstract class ServiceTestBase extends DatabaseTestBase {
     protected final SessionManager sessions = new SessionManager(clock);
     protected final AuthService auth = new AuthService(database, hasher, sessions);
     protected final EmployeeService employees = new EmployeeService(database, hasher, auth);
+    protected final LeaveService leave = new LeaveService(database, auth, clock);
+    protected final ReportService reports = new ReportService(database, auth);
 
     /** Creates an HR account (as the seed tool does) and returns a logged-in token. */
     protected String hrToken() throws Exception {

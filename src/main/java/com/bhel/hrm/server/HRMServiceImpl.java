@@ -15,24 +15,31 @@ import com.bhel.hrm.server.dao.DataAccessException;
 import com.bhel.hrm.server.dao.Database;
 import com.bhel.hrm.server.service.AuthService;
 import com.bhel.hrm.server.service.EmployeeService;
+import com.bhel.hrm.server.service.LeaveService;
+import com.bhel.hrm.server.service.ReportService;
 import com.bhel.hrm.server.service.ServiceErrors;
 import java.time.LocalDate;
 import java.util.List;
 
 /**
- * The object clients call over RMI. Account methods are real; the employee and HR features are still
- * "not implemented" and arrive in Phase 5.
+ * The object clients call over RMI. It holds no rules of its own: every method hands the call to the
+ * service that owns it (accounts, employees, leave, reports), and those services check who is calling.
  */
 public class HRMServiceImpl implements HRMService {
 
     private final Database database;
     private final AuthService auth;
     private final EmployeeService employees;
+    private final LeaveService leave;
+    private final ReportService reports;
 
-    public HRMServiceImpl(Database database, AuthService auth, EmployeeService employees) {
+    public HRMServiceImpl(Database database, AuthService auth, EmployeeService employees, LeaveService leave,
+            ReportService reports) {
         this.database = database;
         this.auth = auth;
         this.employees = employees;
+        this.leave = leave;
+        this.reports = reports;
     }
 
     /** Succeeds only if the database answers too, so "the server is up" really means it can work. */
@@ -44,6 +51,8 @@ public class HRMServiceImpl implements HRMService {
             throw ServiceErrors.unavailable(e);
         }
     }
+
+    // ---- account ------------------------------------------------------------------------------
 
     @Override
     public Session login(String loginId, String password) throws HrmException {
@@ -60,6 +69,8 @@ public class HRMServiceImpl implements HRMService {
         auth.changePassword(token, oldPassword, newPassword);
     }
 
+    // ---- HR -----------------------------------------------------------------------------------
+
     @Override
     public RegistrationResult registerEmployee(String token, String firstName, String lastName, String icPassport)
             throws HrmException {
@@ -72,21 +83,21 @@ public class HRMServiceImpl implements HRMService {
     }
 
     @Override
-    public List<LeaveApplication> listPendingLeave(String token) throws ServiceUnavailableException {
-        throw notImplemented();
+    public List<LeaveApplication> listPendingLeave(String token) throws HrmException {
+        return leave.listPendingLeave(token);
     }
 
     @Override
-    public LeaveApplication decideLeave(String token, long applicationId, boolean approve)
-            throws ServiceUnavailableException {
-        throw notImplemented();
+    public LeaveApplication decideLeave(String token, long applicationId, boolean approve) throws HrmException {
+        return leave.decideLeave(token, applicationId, approve);
     }
 
     @Override
-    public YearlyReport generateYearlyReport(String token, long employeeId, int year)
-            throws ServiceUnavailableException {
-        throw notImplemented();
+    public YearlyReport generateYearlyReport(String token, long employeeId, int year) throws HrmException {
+        return reports.generateYearlyReport(token, employeeId, year);
     }
+
+    // ---- employee: profile and family ---------------------------------------------------------
 
     @Override
     public Employee getMyProfile(String token) throws HrmException {
@@ -120,28 +131,26 @@ public class HRMServiceImpl implements HRMService {
         employees.removeFamilyMember(token, familyMemberId);
     }
 
+    // ---- employee: leave ----------------------------------------------------------------------
+
     @Override
-    public List<LeaveType> getLeaveTypes(String token) throws ServiceUnavailableException {
-        throw notImplemented();
+    public List<LeaveType> getLeaveTypes(String token) throws HrmException {
+        return leave.getLeaveTypes(token);
     }
 
     @Override
-    public List<LeaveBalance> getMyLeaveBalances(String token, int year) throws ServiceUnavailableException {
-        throw notImplemented();
+    public List<LeaveBalance> getMyLeaveBalances(String token, int year) throws HrmException {
+        return leave.getMyLeaveBalances(token, year);
     }
 
     @Override
     public LeaveApplication applyForLeave(String token, long leaveTypeId, LocalDate startDate, LocalDate endDate,
-            String reason) throws ServiceUnavailableException {
-        throw notImplemented();
+            String reason) throws HrmException {
+        return leave.applyForLeave(token, leaveTypeId, startDate, endDate, reason);
     }
 
     @Override
-    public List<LeaveApplication> getMyLeaveApplications(String token) throws ServiceUnavailableException {
-        throw notImplemented();
-    }
-
-    private static ServiceUnavailableException notImplemented() {
-        return new ServiceUnavailableException("Not implemented yet");
+    public List<LeaveApplication> getMyLeaveApplications(String token) throws HrmException {
+        return leave.getMyLeaveApplications(token);
     }
 }

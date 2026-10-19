@@ -8,6 +8,8 @@ import com.bhel.hrm.server.security.Pbkdf2PasswordHasher;
 import com.bhel.hrm.server.security.SessionManager;
 import com.bhel.hrm.server.service.AuthService;
 import com.bhel.hrm.server.service.EmployeeService;
+import com.bhel.hrm.server.service.LeaveService;
+import com.bhel.hrm.server.service.ReportService;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.rmi.RemoteException;
@@ -35,8 +37,11 @@ public final class HrmServerMain {
             AuthService auth = new AuthService(database, hasher, new SessionManager(Clock.systemUTC()));
 
             EmployeeService employees = new EmployeeService(database, hasher, auth);
+            LeaveService leave = new LeaveService(database, auth, Clock.systemDefaultZone());
+            ReportService reports = new ReportService(database, auth);
 
-            RmiServer server = RmiServer.start(settings, new HRMServiceImpl(database, auth, employees));
+            RmiServer server = RmiServer.start(settings,
+                    new HRMServiceImpl(database, auth, employees, leave, reports));
             Runtime.getRuntime().addShutdownHook(new Thread(server::close));
             System.out.println("HR server running over TLS: registry port " + settings.registryPort()
                     + ", service port " + settings.objectPort());

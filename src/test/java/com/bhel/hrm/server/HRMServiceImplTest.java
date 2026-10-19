@@ -12,6 +12,8 @@ import com.bhel.hrm.common.model.Session;
 import com.bhel.hrm.server.security.SessionManager;
 import com.bhel.hrm.server.service.AuthService;
 import com.bhel.hrm.server.service.EmployeeService;
+import com.bhel.hrm.server.service.LeaveService;
+import com.bhel.hrm.server.service.ReportService;
 import com.bhel.hrm.server.testsupport.CountingHasher;
 import com.bhel.hrm.server.testsupport.FakeDatabase;
 import com.bhel.hrm.server.testsupport.MutableClock;
@@ -24,13 +26,15 @@ class HRMServiceImplTest {
 
     private final FakeDatabase database = new FakeDatabase();
     private final CountingHasher hasher = new CountingHasher();
+    private final MutableClock clock = new MutableClock();
     private HRMServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        AuthService auth = new AuthService(database, hasher, new SessionManager(new MutableClock()));
+        AuthService auth = new AuthService(database, hasher, new SessionManager(clock));
         EmployeeService employees = new EmployeeService(database, hasher, auth);
-        service = new HRMServiceImpl(database, auth, employees);
+        service = new HRMServiceImpl(database, auth, employees,
+                new LeaveService(database, auth, clock), new ReportService(database, auth));
         database.addEmployee(hasher, "Alice", "Tan", "AB123456", Role.EMPLOYEE, PASSWORD, false);
     }
 
@@ -73,10 +77,9 @@ class HRMServiceImplTest {
     }
 
     @Test
-    void leaveFeaturesAreStillNotImplementedYet() {
-        ServiceUnavailableException error = assertThrows(ServiceUnavailableException.class,
-                () -> service.getLeaveTypes("any-token"));
-
-        assertEquals("Not implemented yet", error.getMessage());
+    void leaveAndReportMethodsCheckTheSessionFirst() {
+        assertThrows(InvalidCredentialsException.class, () -> service.getLeaveTypes("any-token"));
+        assertThrows(InvalidCredentialsException.class, () -> service.listPendingLeave("any-token"));
+        assertThrows(InvalidCredentialsException.class, () -> service.generateYearlyReport("any-token", 1L, 2026));
     }
 }
