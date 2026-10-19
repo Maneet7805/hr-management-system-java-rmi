@@ -105,6 +105,16 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 51 | The first HR account is created by `SeedHrMain`: hidden console prompt, or the environment variable `HRM_SEED_PASSWORD` where there is no console. | Implements #29. The password never appears on a command line. |
 | 52 | Starting the server now needs `HRM_DB_PASSWORD` as well as `HRM_KEYSTORE_PASSWORD`. `ping()` also checks the database. | "The server is up" should mean it can work. |
 
+## Phase 5: features (all Assistant calls; the owner delegated the open choices on 2026-10-19)
+
+| # | Decision | Why |
+|---|---|---|
+| 53 | Service tests run against the real MySQL test database, not a hand-written fake. | The leave rules depend on SQL behaviour (overlap, sums, locks); a fake would copy that logic and could drift. The Phase 4 fake stays for the earlier tests. |
+| 54 | Temporary passwords are 12 characters from a 57-character alphabet without look-alikes (no 0/O, 1/l/I), about 70 bits. Shown once to HR, hashed in the database, never logged. | Easy to read out or copy by hand, and far too strong to guess before it is changed (#28, #48). |
+| 55 | HR staff can keep a profile and family like anyone else; leave methods are for employees only. | Follows #25. |
+| 56 | Leave can have past dates (a medical certificate often comes after the fact). The only date rules are the contract's (end not before start, one calendar year). | Not restricting what the brief does not restrict. |
+| 57 | Someone else's family member id is reported as "Family member not found." | Does not reveal that the id exists. |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.
