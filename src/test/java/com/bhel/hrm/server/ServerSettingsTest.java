@@ -105,6 +105,24 @@ class ServerSettingsTest {
         assertTrue(note.contains("docs/two-computer-setup.md"), note);
     }
 
+    /** Sourcery finding 9: the expanded spelling of ::1 was reported as reachable by other computers. */
+    @Test
+    void addressNoteRecognisesEverySpellingOfTheLoopbackAddress() {
+        for (String loopback : new String[] {"::1", "0:0:0:0:0:0:0:1", "127.0.0.1", "127.1.2.3"}) {
+            String note = advertising(loopback).addressNote(List.of(loopback));
+
+            assertTrue(note.startsWith("Only programs on this computer can connect"), loopback + ": " + note);
+        }
+    }
+
+    /** A host name that merely starts with "127." is a real network name, not this computer. */
+    @Test
+    void addressNoteDoesNotMistakeANameForTheLoopbackAddress() {
+        String note = advertising("127.example.com").addressNote(List.of("127.example.com"));
+
+        assertTrue(note.contains("server.host=127.example.com"), note);
+    }
+
     @Test
     void addressNoteWarnsWhenTheCertificateDoesNotCoverTheAdvertisedAddress() {
         String note = advertising("192.168.1.20").addressNote(List.of("localhost", "127.0.0.1"));

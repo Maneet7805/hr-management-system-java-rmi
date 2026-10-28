@@ -3,6 +3,7 @@ package com.bhel.hrm.server;
 import com.bhel.hrm.net.SettingsSupport;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -62,8 +63,13 @@ public record ServerSettings(int registryPort, int objectPort, Path keyStore, St
         return "Clients on other computers connect with server.host=" + hostname + ".";
     }
 
+    /** localhost, or an IP address of this computer's loopback (127.x.x.x, ::1 in any spelling). */
     private static boolean isThisComputerOnly(String host) {
-        return host.equalsIgnoreCase("localhost") || host.startsWith("127.") || host.equals("::1");
+        if (host.equalsIgnoreCase("localhost")) {
+            return true;
+        }
+        InetAddress ip = CertificateNames.ipAddress(host);
+        return ip != null && ip.isLoopbackAddress();
     }
 
     /** Leaves the password out so it cannot end up in a log. */

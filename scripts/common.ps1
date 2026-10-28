@@ -81,6 +81,47 @@ function Assert-Address([string]$Address) {
     if ($Address -notmatch '^[A-Za-z0-9.:-]+$') { Fail "'$Address' is not a host name or IP address." }
 }
 
+# Why the server key files cannot be reused, or $null if they can. They can when all three exist, open with the
+# passwords in HRM_KEYSTORE_PASSWORD and HRM_TRUSTSTORE_PASSWORD, hold the very same certificate (files left over
+# from different runs would make clients refuse the server), and that certificate lists every requested address.
+function Get-KeysProblem([string[]]$Addresses = @()) {
+    $files = 'config\server.keystore', 'config\server.cer', 'config\client.truststore'
+    $missing = @($files | Where-Object { -not (Test-Path $_) })
+    if ($missing.Count -gt 0) { return "$($missing -join ', ') is missing" }
+    # keytool needs real paths: on macOS and Linux it would read 'config\server.keystore' as one file name.
+    $keystore, $certificate, $truststore = $files | ForEach-Object { (Resolve-Path $_).ProviderPath }
+
+    $listing = & keytool -list -v -keystore $keystore '-storepass:env' 'HRM_KEYSTORE_PASSWORD' 2> $null
+    if ($LASTEXITCODE -ne 0) { return "the saved password does not open config\server.keystore" }
+    $trusted = & keytool -list -v -keystore $truststore '-storepass:env' 'HRM_TRUSTSTORE_PASSWORD' 2> $null
+    if ($LASTEXITCODE -ne 0) { return "the saved password does not open config\client.truststore" }
+    $published = & keytool -printcert -file $certificate 2> $null
+    if ($LASTEXITCODE -ne 0) { return "config\server.cer cannot be read" }
+
+    $fingerprint = Get-Fingerprints $listing
+    if (-not $fingerprint -or (Get-Fingerprints $published) -ne $fingerprint -or (Get-Fingerprints $trusted) -ne $fingerprint) {
+        return "server.keystore, server.cer and client.truststore do not hold the same certificate"
+    }
+    foreach ($address in $Addresses) {
+        if (-not (Test-KeysCover $listing @($address))) { return "the certificate does not include $address" }
+    }
+    return $null
+}
+
+# The SHA256 fingerprints in keytool's output, as one piece of text so two listings can be compared.
+function Get-Fingerprints($Listing) {
+    return (@($Listing | ForEach-Object { if ($_ -match '^\s*SHA256:\s*(\S+)') { $Matches[1] } }) -join ',')
+}
+
+# True if keytool's listing of the certificate names every address (it prints "DNSName: x" or "IPAddress: x").
+function Test-KeysCover($Listing, [string[]]$Addresses) {
+    foreach ($address in $Addresses) {
+        $pattern = "^\s*(DNSName|IPAddress):\s*$([regex]::Escape($address))\s*$"
+        if (-not ($Listing | Where-Object { $_ -match $pattern })) { return $false }
+    }
+    return $true
+}
+
 function New-RandomPassword {
     $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'.ToCharArray()
     $bytes = New-Object byte[] 24

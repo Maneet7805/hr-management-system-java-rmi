@@ -16,15 +16,6 @@ param(
 
 . "$PSScriptRoot\common.ps1"
 
-# True if keytool's listing of the certificate names every address (it prints "DNSName: x" or "IPAddress: x").
-function Test-KeysCover($Listing, [string[]]$Addresses) {
-    foreach ($address in $Addresses) {
-        $pattern = "^\s*(DNSName|IPAddress):\s*$([regex]::Escape($address))\s*$"
-        if (-not ($Listing | Where-Object { $_ -match $pattern })) { return $false }
-    }
-    return $true
-}
-
 Write-Host ""
 Write-Host "BHEL HR Management System: one-time setup" -ForegroundColor Green
 Write-Host ""
@@ -34,6 +25,11 @@ Import-SavedSettings
 # setup.bat passes "a,b" as one piece of text, so split it here.
 $ServerAddress = @($ServerAddress | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
 foreach ($address in $ServerAddress) { Assert-Address $address }
+# A password made up here and not saved could never be typed again, so the keys would be unusable.
+if ($NoSaveSettings -and (-not $env:HRM_KEYSTORE_PASSWORD -or -not $env:HRM_TRUSTSTORE_PASSWORD -or
+        $env:HRM_KEYSTORE_PASSWORD -eq $env:HRM_TRUSTSTORE_PASSWORD)) {
+    Fail "With -NoSaveSettings, first set HRM_KEYSTORE_PASSWORD and a different HRM_TRUSTSTORE_PASSWORD yourself."
+}
 
 # 1. The database password (set up earlier, outside this script, because it belongs to the MySQL account).
 if (-not $env:HRM_DB_PASSWORD) {
@@ -55,19 +51,21 @@ if (-not $env:HRM_TRUSTSTORE_PASSWORD -or $env:HRM_TRUSTSTORE_PASSWORD -eq $env:
     $newPassword = $true
 }
 
-$keyFiles = 'config\server.keystore', 'config\server.cer', 'config\client.truststore'
-$keysWork = $false
-if (-not $newPassword -and -not $NewKeys -and -not ($keyFiles | Where-Object { -not (Test-Path $_) })) {
-    $listing = & keytool -list -v -keystore 'config\server.keystore' '-storepass:env' 'HRM_KEYSTORE_PASSWORD' 2> $null
-    $keysWork = ($LASTEXITCODE -eq 0) -and (Test-KeysCover $listing $ServerAddress)
-    & keytool -list -keystore 'config\client.truststore' '-storepass:env' 'HRM_TRUSTSTORE_PASSWORD' *> $null
-    $keysWork = $keysWork -and ($LASTEXITCODE -eq 0)
-}
-if ($keysWork) {
-    Write-Host "The keys already exist, the saved passwords open them, and they cover the requested addresses."
+$problem = if ($newPassword) { 'new passwords were chosen' } elseif ($NewKeys) { '-NewKeys was given' }
+           else { Get-KeysProblem $ServerAddress }
+if (-not $problem) {
+    Write-Host "The keys already exist, belong together, open with the saved passwords and cover the requested addresses."
 } else {
+    # A running server keeps the keys it loaded when it started. Replacing the files under it would leave it showing
+    # clients the old certificate while they are told to trust the new one.
+    $serverPort = [int](Get-Setting 'config\server.properties' 'rmi.port' '1099')
+    if (Test-Port $serverPort) {
+        Fail ("New keys are needed ($problem), but something is listening on port $serverPort, probably the HR " +
+              "server. Close the program (the run.bat window) and run setup again.")
+    }
+    $keyFiles = 'config\server.keystore', 'config\server.cer', 'config\client.truststore'
     if ($keyFiles | Where-Object { Test-Path $_ }) {
-        Write-Host "Making new keys: new passwords, a new server address, or keys that cannot be opened." -ForegroundColor Yellow
+        Write-Host "Making new keys: $problem." -ForegroundColor Yellow
         Write-Host "Any client computer must import the new config\server.cer again." -ForegroundColor Yellow
         Remove-Item $keyFiles -ErrorAction SilentlyContinue
     }

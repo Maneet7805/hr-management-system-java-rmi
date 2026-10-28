@@ -2,7 +2,7 @@
 
 The **server computer** runs MySQL and the HR server. The **client computer** runs only the window and connects to the server over the network. All traffic between them is RMI over TLS 1.3 or 1.2 on two TCP ports (1099 for the registry, 1100 for the service).
 
-> **Status.** The setup below is scripted and covered by automated tests that run on one machine, with `127.0.0.1` standing in for the server's network address (`ServerAddressTlsTest`, `KeyScriptsTest`). It has **not yet been demonstrated on two real computers**. Record that run in [test-manual.md](test-manual.md) (cases TC-NET-01 to TC-NET-10) before claiming it works.
+> **Status.** The setup below is scripted and covered by automated tests that run on one machine, with `127.0.0.1` standing in for the server's network address (`ServerAddressTlsTest`, `KeyScriptsTest`). It has **not yet been demonstrated on two real computers**. Record that run in [test-manual.md](test-manual.md) (cases TC-NET-01 to TC-NET-11) before claiming it works.
 
 ## How the client decides to trust the server
 
@@ -112,11 +112,12 @@ Both variables are needed in every new terminal. To avoid retyping them, add the
 | `Secure connection failed: the server's certificate is not trusted or does not match the server name.` | The client has an old `server.cer` (the keys were remade), or the address it uses is not in the certificate (the IP changed, or a name was used instead of the IP) | Check the server's start-up line for a `WARNING`. Run step 1 with the current address, then repeat steps 2 and 3. |
 | The login screen appears, but the first action fails with the certificate message | The server's `rmi.hostname` is not an address in its certificate | Read the server's start-up line, then fix it with step 1. |
 | The window waits a long time before showing an error | A firewall is dropping packets without answering. Client timeouts are not implemented yet (issue #20) | Close the window, fix the firewall rule, and try again. |
+| `setup.bat` says new keys are needed but something is listening on port 1099 | The server is still running. It would keep showing clients its old certificate | Close the `run.bat` window, then run setup again. |
 | `Java 25 or newer is needed` (macOS) | `JAVA_HOME` is not set to a JDK 25 | Set `JAVA_HOME` as shown above. |
 
 ## Demonstrating and testing it
 
-The full list, with space for results, is in [test-manual.md](test-manual.md) (TC-NET-01 to TC-NET-10). For the demo:
+The full list, with space for results, is in [test-manual.md](test-manual.md) (TC-NET-01 to TC-NET-11). For the demo:
 
 1. **Ports reachable.** Run the `Test-NetConnection` or `nc` commands from Troubleshooting for ports 1099 and 1100.
 2. **Secure connection works.** Run `run-client.bat -CheckOnly` or `sh scripts/run-client.sh --check`.

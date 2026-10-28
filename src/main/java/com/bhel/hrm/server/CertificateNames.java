@@ -1,15 +1,19 @@
 package com.bhel.hrm.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import javax.naming.InvalidNameException;
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -71,10 +75,35 @@ public final class CertificateNames {
 
     /**
      * Whether a client that connects to {@code host} accepts the certificate. Only exact matches count, ignoring
-     * upper and lower case: the key scripts never make wildcard names such as {@code *.example.com}.
+     * upper and lower case: the key scripts never make wildcard names such as {@code *.example.com}. IP addresses
+     * are compared in one standard form, because Java writes {@code ::1} as {@code 0:0:0:0:0:0:0:1}.
      */
     public static boolean covers(List<String> names, String host) {
-        return names.stream().anyMatch(name -> name.equalsIgnoreCase(host));
+        String wanted = standardForm(host);
+        return names.stream().anyMatch(name -> standardForm(name).equals(wanted));
+    }
+
+    /**
+     * The address written as an IP address, or {@code null} for a host name. Only text made of IP address characters
+     * is parsed, so this never looks a name up on the network.
+     */
+    static InetAddress ipAddress(String host) {
+        boolean ipv4 = host.matches("[0-9]{1,3}(\\.[0-9]{1,3}){3}")
+                && Arrays.stream(host.split("\\.")).allMatch(part -> Integer.parseInt(part) <= 255);
+        boolean ipv6 = host.contains(":") && host.matches("[0-9A-Fa-f:.]+");
+        if (!ipv4 && !ipv6) {
+            return null;   // a name, or something like 999.1.1.1 that Java would otherwise look up as a name
+        }
+        try {
+            return InetAddress.getByName(host);
+        } catch (UnknownHostException e) {
+            return null;   // text with colons that is still not a valid IPv6 address
+        }
+    }
+
+    private static String standardForm(String host) {
+        InetAddress ip = ipAddress(host);
+        return ip != null ? ip.getHostAddress() : host.toLowerCase(Locale.ROOT);
     }
 
     private static String commonName(X509Certificate certificate) {

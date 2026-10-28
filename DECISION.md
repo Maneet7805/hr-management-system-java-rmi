@@ -182,6 +182,12 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 93 | The key scripts pass passwords to `keytool` with its `:env` option. | Passwords no longer appear in the list of running processes. |
 | 94 | The scripts do not create the Windows Firewall rule; the guide gives the one command to run as administrator. | It needs administrator rights, and a firewall change should be a visible, deliberate step. |
 | 95 | Automated tests run the `.sh` key scripts (CI is Linux). The `.bat` and `.ps1` scripts follow the same steps and are checked by hand on Windows. | No Windows machine in CI; a test that only passes on one teammate's computer is worse than an honest manual check. |
+| 96 | `setup.ps1` reuses the key files only if `server.keystore`, `server.cer` and `client.truststore` hold the same certificate (same SHA-256 fingerprint), besides opening and covering the addresses. | Files left over from different runs each open fine, but clients would then refuse the server (review of PR #35). |
+| 97 | `setup.ps1` refuses to make new keys while anything listens on the server's registry port, and asks the user to close the program first. | A running server keeps the keys it loaded at start-up and would go on showing the old certificate. |
+| 98 | With `-NoSaveSettings`, setup and client setup require the passwords to be set beforehand instead of making up ones that are then lost. | A password nobody can type again makes the keys unusable. |
+| 99 | `setup-client.ps1` checks the address before importing the certificate, and saves the truststore password only after the certificate is accepted. | A typo or a "no" must leave an existing working client as it was. |
+| 100 | PowerShell tests run the real `.ps1` scripts with `pwsh`, replacing only `cmd` (the `.bat` files) and `mvn`. They skip where `pwsh` is missing. Saved Windows user settings, the `.bat` files and the firewall are still checked by hand. | Most script logic gets automatic regression tests without a Windows machine in CI. Refines #95. |
+| 101 | Not changed in PR #35: a lock against two key generations running at once (the next setup run now detects a mixed set, #96), a limit on unauthenticated `ping()` calls (older than this PR; any login call is costlier), and client timeouts (issue #20). | Low risk for a two-laptop demo, or outside this PR's scope; tracked separately. |
 
 ## Open
 

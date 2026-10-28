@@ -65,7 +65,7 @@ If MySQL is installed somewhere else, set `HRM_MYSQLD` (full path of `mysqld.exe
 
 ### Two computers
 
-The client can run on a second computer (Windows or macOS) that needs only JDK 25, Maven and the server's public certificate: no MySQL and no server keys. On the server computer run `setup.bat -ServerAddress <its IP address>`; on the client computer run `setup-client.bat` (or `scripts/setup-client.sh` on macOS) and then `run-client.bat` (or `scripts/run-client.sh`). Step by step, with firewall settings and test cases: [docs/two-computer-setup.md](docs/two-computer-setup.md).
+The client can run on a second computer (Windows, macOS or Linux) that needs only JDK 25, Maven and the server's public certificate: no MySQL and no server keys. On the server computer run `setup.bat -ServerAddress <its IP address>`; on the client computer run `setup-client.bat` (or `scripts/setup-client.sh` on macOS and Linux) and then `run-client.bat` (or `scripts/run-client.sh`). Step by step, with firewall settings and test cases: [docs/two-computer-setup.md](docs/two-computer-setup.md).
 
 The manual steps below do the same things one by one, for other systems or for running from an IDE.
 ### Manual setup

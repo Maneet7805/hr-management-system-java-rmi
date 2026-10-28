@@ -20,37 +20,44 @@ Write-Host ""
 Assert-Tools
 Import-SavedSettings
 
+# Everything is checked before anything changes, so a mistake or a "no" leaves a working setup exactly as it was.
 # 1. The server's public certificate. It is not a secret, so no password comes with it.
 if (-not (Test-Path $Certificate)) {
     Fail ("The server certificate $Certificate was not found. Copy config\server.cer from the server computer " +
           "into this computer's config folder first (see docs\two-computer-setup.md).")
 }
-
-# 2. This computer's own truststore password. It never has to match anything on the server computer.
-if (-not $env:HRM_TRUSTSTORE_PASSWORD) {
-    $env:HRM_TRUSTSTORE_PASSWORD = New-RandomPassword
-}
-if (-not $NoSaveSettings) {
-    [Environment]::SetEnvironmentVariable('HRM_TRUSTSTORE_PASSWORD', $env:HRM_TRUSTSTORE_PASSWORD, 'User')
+# A password made up here and not saved could never be typed again, so the truststore would be unusable.
+if ($NoSaveSettings -and -not $env:HRM_TRUSTSTORE_PASSWORD) {
+    Fail "With -NoSaveSettings, first set HRM_TRUSTSTORE_PASSWORD yourself."
 }
 
-Write-Step "Trusting the server certificate"
-Write-Host "Compare the SHA256 fingerprint below with the one the server computer showed. Type yes only if they match."
-& cmd /c 'scripts\import-server-cert.bat' $Certificate
-if ($LASTEXITCODE -ne 0) { Fail "The server certificate was not trusted, so this computer cannot connect yet." }
-
-# 3. Which computer the server is on. Every other line of client.properties is kept.
+# 2. Which computer the server is on.
 $settings = 'config\client.properties'
-if (-not (Test-Path $settings)) {
-    Copy-Item 'config\client.example.properties' $settings -ErrorAction Stop
-    Write-Host "Created $settings"
-}
 if (-not $ServerAddress) {
     $current = Get-Setting $settings 'server.host' 'localhost'
     $ServerAddress = Read-Host "The server computer's IP address or name [$current]"
     if (-not $ServerAddress) { $ServerAddress = $current }
 }
 Assert-Address $ServerAddress
+
+# 3. Trust the certificate, protected by this computer's own password (it never has to match the server's).
+if (-not $env:HRM_TRUSTSTORE_PASSWORD) {
+    $env:HRM_TRUSTSTORE_PASSWORD = New-RandomPassword
+}
+Write-Step "Trusting the server certificate"
+Write-Host "Compare the SHA256 fingerprint below with the one the server computer showed. Type yes only if they match."
+& cmd /c 'scripts\import-server-cert.bat' $Certificate
+if ($LASTEXITCODE -ne 0) { Fail "The server certificate was not trusted. Nothing on this computer was changed." }
+# Saved only now: a refused certificate must not replace the password an existing truststore still needs.
+if (-not $NoSaveSettings) {
+    [Environment]::SetEnvironmentVariable('HRM_TRUSTSTORE_PASSWORD', $env:HRM_TRUSTSTORE_PASSWORD, 'User')
+}
+
+# 4. Point the client at the server. Every other line of client.properties is kept.
+if (-not (Test-Path $settings)) {
+    Copy-Item 'config\client.example.properties' $settings -ErrorAction Stop
+    Write-Host "Created $settings"
+}
 Set-Setting $settings 'server.host' $ServerAddress
 Write-Host "Set server.host=$ServerAddress in $settings"
 

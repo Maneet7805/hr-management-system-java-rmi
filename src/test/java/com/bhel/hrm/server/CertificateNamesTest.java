@@ -2,6 +2,8 @@ package com.bhel.hrm.server;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,5 +51,24 @@ class CertificateNamesTest {
         assertTrue(CertificateNames.covers(names, "127.0.0.1"));
         assertFalse(CertificateNames.covers(names, "hr-server.local"));
         assertFalse(CertificateNames.covers(names, "192.0.2.10"));
+    }
+
+    /** Java reads an IPv6 entry back as 0:0:0:0:0:0:0:1, so ::1 in the settings must still match it. */
+    @Test
+    void coversMatchesAnIpv6AddressWrittenEitherWay(@TempDir Path dir) throws IOException {
+        Identity identity = TlsTestFiles.createIdentity(dir, "v6", List.of("localhost", "::1"));
+        List<String> names = CertificateNames.read(identity.keyStore(), TlsTestFiles.PASSWORD);
+
+        assertTrue(CertificateNames.covers(names, "::1"), names.toString());
+        assertTrue(CertificateNames.covers(names, "0:0:0:0:0:0:0:1"), names.toString());
+    }
+
+    @Test
+    void onlyTextThatIsAnIpAddressIsTreatedAsOne() {
+        assertNotNull(CertificateNames.ipAddress("192.168.1.20"));
+        assertNotNull(CertificateNames.ipAddress("::1"));
+        assertNull(CertificateNames.ipAddress("127.example.com"));
+        assertNull(CertificateNames.ipAddress("hr-server"));
+        assertNull(CertificateNames.ipAddress("999.1.1.1"));
     }
 }
