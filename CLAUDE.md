@@ -39,7 +39,7 @@ Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Databa
 
 ## Build and test
 
-Maven, Java 25 (the `pom.xml` sets `maven.compiler.release`). Windows is the only fully scripted platform for now; macOS/Linux scripts are planned in issue #27.
+Maven, Java 25 (the `pom.xml` sets `maven.compiler.release`). Windows is the only fully scripted platform for now; macOS/Linux have client-only scripts (`scripts/setup-client.sh`, `scripts/run-client.sh`) and server scripts are planned in issue #27. Running client and server on two computers: `docs/two-computer-setup.md`.
 
 - Build: `mvn compile`
 - Test: `mvn test`. Database tests need MySQL, a `hrm_test` database, user `hrm_app` and env var `HRM_DB_PASSWORD`; without them they fail on purpose. Skip them deliberately with `mvn test "-Dhrm.skipDbTests=true"`.

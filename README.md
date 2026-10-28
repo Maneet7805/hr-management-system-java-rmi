@@ -63,13 +63,17 @@ Needs JDK 25, Maven, MySQL 8.4 with the `hrm` database and a MySQL user `hrm_app
 
 If MySQL is installed somewhere else, set `HRM_MYSQLD` (full path of `mysqld.exe`) and `HRM_MYSQL_DATA` (its data folder). If something goes wrong, the message says what to do; the server's own messages are in `target/server.log`.
 
+### Two computers
+
+The client can run on a second computer (Windows or macOS) that needs only JDK 25, Maven and the server's public certificate: no MySQL and no server keys. On the server computer run `setup.bat -ServerAddress <its IP address>`; on the client computer run `setup-client.bat` (or `scripts/setup-client.sh` on macOS) and then `run-client.bat` (or `scripts/run-client.sh`). Step by step, with firewall settings and test cases: [docs/two-computer-setup.md](docs/two-computer-setup.md).
+
 The manual steps below do the same things one by one, for other systems or for running from an IDE.
 ### Manual setup
 
 1. Install the tools listed under [Requirements](#requirements).
-2. Create the TLS keystore and truststore with `scripts/generate-keys.sh` (macOS/Linux) or `scripts/generate-keys.bat` (Windows).
-3. For each file in `config/`, copy `*.example.properties` to the same name without `.example` and fill in your values. The real files are git-ignored.
-4. Set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD` and `HRM_TRUSTSTORE_PASSWORD` as environment variables.
+2. Set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD` and `HRM_TRUSTSTORE_PASSWORD` as environment variables. The keystore and truststore passwords must be different.
+3. Create the TLS keys with `sh scripts/generate-keys.sh` (macOS/Linux) or `scripts\generate-keys.bat` (Windows). Add the server's IP address or name as an argument if clients on other computers will connect.
+4. For each file in `config/`, copy `*.example.properties` to the same name without `.example` and fill in your values. The real files are git-ignored.
 5. Create the database tables (see the last paragraph of [Running the tests](#running-the-tests)).
 
 To create the first HR account, start the server and open the client, follow [Manual first run](#manual-first-run-for-example-from-an-ide).
@@ -92,7 +96,7 @@ To create the tables in the development database `hrm`, run `com.bhel.hrm.server
 
 Set these environment variables in the run configuration, never in a file: `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD`, and for the client `HRM_TRUSTSTORE_PASSWORD`.
 
-1. `scripts/generate-keys.bat` makes the development keystore and truststore.
+1. `scripts\generate-keys.bat` (or `sh scripts/generate-keys.sh`) makes the server keystore, its public certificate and a truststore.
 2. Copy `config/server.example.properties` to `config/server.properties` and `config/client.example.properties` to `config/client.properties`.
 3. Run `DatabaseSetupMain` to create the tables.
 4. Run `com.bhel.hrm.server.SeedHrMain` to create the first HR account. It asks for the name, IC/passport number and password (typed without echo). With no console, pass the three details as arguments and set `HRM_SEED_PASSWORD`.
@@ -106,8 +110,10 @@ Passwords are stored only as salted PBKDF2 hashes. An employee registered by HR 
 ```
 pom.xml                          build file (Maven, Java 25)
 config/                          *.example.properties templates; real config and keystores are git-ignored
-scripts/                         generate-keys.sh / .bat (local TLS keys); setup.ps1, run.ps1, common.ps1 (used by setup.bat and run.bat)
+scripts/                         generate-keys and import-server-cert (.sh / .bat: TLS keys); setup/run(-client).ps1 and
+                                 common.ps1 (used by the .bat files); setup-client.sh, run-client.sh, common.sh (macOS/Linux)
 setup.bat, run.bat               one-time setup and everyday start (Windows)
+setup-client.bat, run-client.bat the same for a computer that only runs the client (Windows)
 src/main/java/com/bhel/hrm/
   common/                        HRMService remote interface + model/ data classes (shared contract)
   net/                           TLS and RMI helpers shared by client and server
@@ -128,13 +134,14 @@ Secrets are never stored in files: set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD
 
 ## Known gaps
 
-Open work is tracked in [GitHub issues](https://github.com/Maneet7805/hr-management-system-java-rmi/issues): client timeouts, HR password reset and employee edit/deactivate, running on two computers, macOS/Linux support, fault tolerance and the Payroll System.
+Open work is tracked in [GitHub issues](https://github.com/Maneet7805/hr-management-system-java-rmi/issues): client timeouts, HR password reset and employee edit/deactivate, macOS/Linux scripts for the server, fault tolerance and the Payroll System. Running on two computers is scripted and tested on one machine, but not yet demonstrated on two real computers.
 
 ## Documentation
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to work on a branch and open a pull request
 - [DECISION.md](DECISION.md): running log of project decisions and why they were made
 - [docs/test-manual.md](docs/test-manual.md): manual and automated test cases
+- [docs/two-computer-setup.md](docs/two-computer-setup.md): running the client and server on separate computers
 - [docs/diagrams/](docs/diagrams): use case and architecture diagrams
 
 ## Team workflow

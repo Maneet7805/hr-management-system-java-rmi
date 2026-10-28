@@ -169,6 +169,20 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 85 | The scripts check each program's exit code rather than treating its messages as errors. | `keytool` and `java` print ordinary progress messages to the error stream; treating them as fatal stopped key creation halfway (found by testing on a copy). |
 | 86 | MySQL is started by the script only if nothing is listening on port 3306; paths can be changed with `HRM_MYSQLD` and `HRM_MYSQL_DATA`. | MySQL on this project is started by hand, not as a Windows service (#17). |
 
+## Two computers (all Assistant calls; requested by the owner on 2026-10-28, issue #26)
+
+| # | Decision | Why |
+|---|---|---|
+| 87 | The certificate always lists `localhost` and `127.0.0.1`, plus every address passed to the key scripts, as Subject Alternative Names. IP addresses are IP entries, names are DNS entries. Host-name checking stays on. | Java never matches an IP address against a name, so the old `CN=localhost` certificate could not work across the network. Keeping `localhost` keeps the one-computer setup working. |
+| 88 | The truststore has its own password (`HRM_TRUSTSTORE_PASSWORD`); the key scripts refuse the same password for both stores. | A client computer must never need the password that protects the server's private key. |
+| 89 | A client computer receives only `server.cer` (public) and builds its own truststore with its own password. `keytool` shows the SHA-256 fingerprint and asks before trusting it; the user compares it with the one the server printed. | No secret leaves the server computer, and a certificate swapped while being copied is caught. |
+| 90 | The server is told its network address (`rmi.hostname`, set by `setup.bat -ServerAddress`); the client still follows the address in the stub. At start-up the server prints which address clients use, or a warning if its certificate does not cover it. | Standard RMI behaviour, easy to explain. The warning turns the most likely demo mistake (a changed IP) into a message on the server instead of a refused connection on the other computer. |
+| 91 | Separate client-only scripts (`setup-client` / `run-client` as `.bat` + `.ps1`, and `.sh` for macOS/Linux) instead of switches inside `setup` / `run`. | The existing one-computer flow is unchanged, and a client computer needs no MySQL, database password or server keys. |
+| 92 | `setup.ps1` makes new keys only when a password is new, a key file is missing or unreadable, a requested address is not in the certificate, or `-NewKeys` is given. With `-ServerAddress` it changes the `rmi.hostname` line of `server.properties`; no other line is touched. | Re-running setup stays safe (#84). Changing that one key is the exception to "never overwrite a settings file", and only when the address is asked for explicitly. |
+| 93 | The key scripts pass passwords to `keytool` with its `:env` option. | Passwords no longer appear in the list of running processes. |
+| 94 | The scripts do not create the Windows Firewall rule; the guide gives the one command to run as administrator. | It needs administrator rights, and a firewall change should be a visible, deliberate step. |
+| 95 | Automated tests run the `.sh` key scripts (CI is Linux). The `.bat` and `.ps1` scripts follow the same steps and are checked by hand on Windows. | No Windows machine in CI; a test that only passes on one teammate's computer is worse than an honest manual check. |
+
 ## Open
 
 - The MySQL `root` account still has an empty password (it only listens on 127.0.0.1). Owner should set one.

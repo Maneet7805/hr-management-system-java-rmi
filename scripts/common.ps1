@@ -63,6 +63,33 @@ function Get-Setting([string]$File, [string]$Key, [string]$Default) {
     return $Default
 }
 
+# Changes one key in a settings file and keeps every other line, comments included, as it is.
+function Set-Setting([string]$File, [string]$Key, [string]$Value) {
+    $pattern = "^\s*$([regex]::Escape($Key))\s*="
+    $lines = @(Get-Content $File)
+    if ($lines | Where-Object { $_ -match $pattern }) {
+        $lines = @($lines | ForEach-Object { if ($_ -match $pattern) { "$Key=$Value" } else { $_ } })
+    } else {
+        $lines += "$Key=$Value"
+    }
+    # UTF-8 without a byte-order mark, which is how Java reads the file.
+    [System.IO.File]::WriteAllLines((Resolve-Path $File).Path, [string[]]$lines)
+}
+
+# A server address goes into the certificate and the settings files, so only a plain name or IP address is allowed.
+function Assert-Address([string]$Address) {
+    if ($Address -notmatch '^[A-Za-z0-9.:-]+$') { Fail "'$Address' is not a host name or IP address." }
+}
+
+function New-RandomPassword {
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'.ToCharArray()
+    $bytes = New-Object byte[] 24
+    $generator = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+    $generator.GetBytes($bytes)
+    $generator.Dispose()
+    return -join ($bytes | ForEach-Object { $alphabet[$_ % $alphabet.Length] })
+}
+
 function Assert-Tools {
     if (-not (Get-Command java -ErrorAction SilentlyContinue)) { Fail "Java was not found. Install JDK 25 and make sure 'java' works in a new terminal." }
     if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) { Fail "Maven was not found. Install Maven and make sure 'mvn' works in a new terminal." }

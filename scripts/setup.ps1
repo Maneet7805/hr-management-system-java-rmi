@@ -1,22 +1,28 @@
-# One-time setup: key password, development keys, settings files, database tables, first HR account.
+# One-time setup: key passwords, server keys, settings files, database tables, first HR account.
 # Run it with setup.bat (double-click) or:  powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 #
-#   -NoSaveSettings   do not save passwords in the Windows user settings (for testing)
-#   -SkipSeed         do not offer to create an HR account
+#   -ServerAddress 192.168.1.20   let other computers connect: the IP address (or name) they use to reach this one.
+#                                 It is added to the server certificate and set as rmi.hostname. Several addresses
+#                                 can be given, separated by commas; the first one is the one clients are sent to.
+#   -NewKeys                      make new keys even if the existing ones still work
+#   -NoSaveSettings               do not save passwords in the Windows user settings (for testing)
+#   -SkipSeed                     do not offer to create an HR account
 param(
+    [string[]]$ServerAddress = @(),
+    [switch]$NewKeys,
     [switch]$NoSaveSettings,
     [switch]$SkipSeed
 )
 
 . "$PSScriptRoot\common.ps1"
 
-function New-RandomPassword {
-    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'.ToCharArray()
-    $bytes = New-Object byte[] 24
-    $generator = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
-    $generator.GetBytes($bytes)
-    $generator.Dispose()
-    return -join ($bytes | ForEach-Object { $alphabet[$_ % $alphabet.Length] })
+# True if keytool's listing of the certificate names every address (it prints "DNSName: x" or "IPAddress: x").
+function Test-KeysCover($Listing, [string[]]$Addresses) {
+    foreach ($address in $Addresses) {
+        $pattern = "^\s*(DNSName|IPAddress):\s*$([regex]::Escape($address))\s*$"
+        if (-not ($Listing | Where-Object { $_ -match $pattern })) { return $false }
+    }
+    return $true
 }
 
 Write-Host ""
@@ -25,6 +31,9 @@ Write-Host ""
 
 Assert-Tools
 Import-SavedSettings
+# setup.bat passes "a,b" as one piece of text, so split it here.
+$ServerAddress = @($ServerAddress | ForEach-Object { $_ -split ',' } | Where-Object { $_ })
+foreach ($address in $ServerAddress) { Assert-Address $address }
 
 # 1. The database password (set up earlier, outside this script, because it belongs to the MySQL account).
 if (-not $env:HRM_DB_PASSWORD) {
@@ -32,36 +41,45 @@ if (-not $env:HRM_DB_PASSWORD) {
           "then save its password with:  setx HRM_DB_PASSWORD ""the-password""  and open a new terminal.")
 }
 
-# 2. The key password and the development keys.
+# 2. The key passwords and the keys. The client truststore gets its own password, so a client computer never
+#    needs the password that protects the server's private key.
 $newPassword = $false
 if (-not $env:HRM_KEYSTORE_PASSWORD) {
-    Write-Step "Choosing a password for the development keys"
+    Write-Step "Choosing a password for the server keys"
     $env:HRM_KEYSTORE_PASSWORD = New-RandomPassword
     $newPassword = $true
 }
-$env:HRM_TRUSTSTORE_PASSWORD = $env:HRM_KEYSTORE_PASSWORD   # the key script uses one password for both
+if (-not $env:HRM_TRUSTSTORE_PASSWORD -or $env:HRM_TRUSTSTORE_PASSWORD -eq $env:HRM_KEYSTORE_PASSWORD) {
+    Write-Step "Choosing a separate password for the client truststore"
+    $env:HRM_TRUSTSTORE_PASSWORD = New-RandomPassword
+    $newPassword = $true
+}
 
+$keyFiles = 'config\server.keystore', 'config\server.cer', 'config\client.truststore'
 $keysWork = $false
-if ((Test-Path 'config\server.keystore') -and (Test-Path 'config\client.truststore') -and -not $newPassword) {
-    & keytool -list -keystore 'config\server.keystore' -storepass $env:HRM_KEYSTORE_PASSWORD *> $null
-    $keysWork = ($LASTEXITCODE -eq 0)
+if (-not $newPassword -and -not $NewKeys -and -not ($keyFiles | Where-Object { -not (Test-Path $_) })) {
+    $listing = & keytool -list -v -keystore 'config\server.keystore' '-storepass:env' 'HRM_KEYSTORE_PASSWORD' 2> $null
+    $keysWork = ($LASTEXITCODE -eq 0) -and (Test-KeysCover $listing $ServerAddress)
+    & keytool -list -keystore 'config\client.truststore' '-storepass:env' 'HRM_TRUSTSTORE_PASSWORD' *> $null
+    $keysWork = $keysWork -and ($LASTEXITCODE -eq 0)
 }
 if ($keysWork) {
-    Write-Host "The development keys already exist and the saved password opens them."
+    Write-Host "The keys already exist, the saved passwords open them, and they cover the requested addresses."
 } else {
-    if ((Test-Path 'config\server.keystore') -or (Test-Path 'config\client.truststore')) {
-        Write-Host "The existing development keys cannot be opened with the saved password, so new ones are made." -ForegroundColor Yellow
-        Remove-Item 'config\server.keystore', 'config\client.truststore' -ErrorAction SilentlyContinue
+    if ($keyFiles | Where-Object { Test-Path $_ }) {
+        Write-Host "Making new keys: new passwords, a new server address, or keys that cannot be opened." -ForegroundColor Yellow
+        Write-Host "Any client computer must import the new config\server.cer again." -ForegroundColor Yellow
+        Remove-Item $keyFiles -ErrorAction SilentlyContinue
     }
-    Write-Step "Creating the development keys"
-    & cmd /c 'scripts\generate-keys.bat'
+    Write-Step "Creating the keys"
+    & cmd /c 'scripts\generate-keys.bat' @ServerAddress
     if ($LASTEXITCODE -ne 0) { Fail "Could not create the keys." }
 }
 
 if (-not $NoSaveSettings) {
     [Environment]::SetEnvironmentVariable('HRM_KEYSTORE_PASSWORD', $env:HRM_KEYSTORE_PASSWORD, 'User')
     [Environment]::SetEnvironmentVariable('HRM_TRUSTSTORE_PASSWORD', $env:HRM_TRUSTSTORE_PASSWORD, 'User')
-    Write-Host "The key password was saved in your Windows user settings (not in any file of the project)."
+    Write-Host "The key passwords were saved in your Windows user settings (not in any file of the project)."
 }
 
 # 3. The settings files. Existing ones are never overwritten.
@@ -71,6 +89,11 @@ foreach ($name in 'server', 'client') {
         Copy-Item "config\$name.example.properties" $target -ErrorAction Stop
         Write-Host "Created $target"
     }
+}
+# The address other computers use goes into every stub the server hands out, so it is set only when asked for.
+if ($ServerAddress.Count -gt 0) {
+    Set-Setting 'config\server.properties' 'rmi.hostname' $ServerAddress[0]
+    Write-Host "Set rmi.hostname=$($ServerAddress[0]) in config\server.properties"
 }
 
 # 4. Build, database tables, first HR account.
@@ -89,5 +112,21 @@ if (-not $SkipSeed) {
     }
 }
 
+Write-Host ""
+$advertised = Get-Setting 'config\server.properties' 'rmi.hostname' 'localhost'
+if ($advertised -notmatch '^(localhost|127\..*|::1)$') {
+    $ports = "$(Get-Setting 'config\server.properties' 'rmi.port' '1099') and $(Get-Setting 'config\server.properties' 'rmi.objectPort' '1100')"
+    Write-Host "Other computers connect to this one at $advertised. On each of them:" -ForegroundColor Green
+    Write-Host "  1. Copy config\server.cer there and run setup-client.bat. Check it shows this same fingerprint:"
+    & keytool -printcert -file 'config\server.cer' | Select-String 'SHA256'
+    Write-Host "  2. On THIS computer, allow TCP ports $ports through Windows Firewall (see docs\two-computer-setup.md)."
+} else {
+    $addresses = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object { $_.IPAddress -notmatch '^(127\.|169\.254\.)' } | ForEach-Object { $_.IPAddress })
+    if ($addresses.Count -gt 0) {
+        Write-Host "Only this computer can connect. To let other computers connect, run setup again with an address, for example:"
+        Write-Host "  setup.bat -ServerAddress $($addresses[0])      (this computer's addresses: $($addresses -join ', '))"
+    }
+}
 Write-Host ""
 Write-Host "Setup is finished. Start the program with run.bat" -ForegroundColor Green

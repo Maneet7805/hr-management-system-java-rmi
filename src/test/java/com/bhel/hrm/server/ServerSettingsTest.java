@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
@@ -83,6 +84,40 @@ class ServerSettingsTest {
     @Test
     void toStringDoesNotRevealThePassword() {
         assertFalse(ServerSettings.from(new Properties(), ENV).toString().contains("test-only-password"));
+    }
+
+    private static ServerSettings advertising(String hostname) {
+        return new ServerSettings(1099, 1100, Path.of("config/server.keystore"), "test-only-password", hostname);
+    }
+
+    @Test
+    void addressNoteGivesTheAddressOtherComputersUse() {
+        String note = advertising("192.168.1.20").addressNote(List.of("localhost", "127.0.0.1", "192.168.1.20"));
+
+        assertTrue(note.contains("server.host=192.168.1.20"), note);
+    }
+
+    @Test
+    void addressNoteSaysWhenOnlyThisComputerCanConnect() {
+        String note = advertising("localhost").addressNote(List.of("localhost", "127.0.0.1"));
+
+        assertTrue(note.startsWith("Only programs on this computer can connect"), note);
+        assertTrue(note.contains("docs/two-computer-setup.md"), note);
+    }
+
+    @Test
+    void addressNoteWarnsWhenTheCertificateDoesNotCoverTheAdvertisedAddress() {
+        String note = advertising("192.168.1.20").addressNote(List.of("localhost", "127.0.0.1"));
+
+        assertTrue(note.startsWith("WARNING"), note);
+        assertTrue(note.contains("192.168.1.20"), note);
+    }
+
+    @Test
+    void addressNoteSaysWhenNoAddressIsSet() {
+        String note = advertising(null).addressNote(List.of("localhost"));
+
+        assertTrue(note.startsWith("rmi.hostname is not set"), note);
     }
 
     @Test

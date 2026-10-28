@@ -30,6 +30,8 @@ replay_pid*
 *.pfx
 *.keystore
 *.truststore
+*.truststore.new
+*.cer
 .env
 *.env
 config.properties

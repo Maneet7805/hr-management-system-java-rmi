@@ -46,6 +46,8 @@ public final class HrmServerMain {
             Runtime.getRuntime().addShutdownHook(new Thread(server::close));
             System.out.println("HR server running over TLS: registry port " + settings.registryPort()
                     + ", service port " + settings.objectPort());
+            System.out.println(settings.addressNote(
+                    CertificateNames.read(settings.keyStore(), settings.keyStorePassword())));
         } catch (RemoteException e) {
             // Listed first: RemoteException is a kind of IOException, so it must be caught before it.
             System.out.println("Cannot start the server: a port may already be in use (" + e.getMessage() + ")");
