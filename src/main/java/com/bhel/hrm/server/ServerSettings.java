@@ -3,8 +3,10 @@ package com.bhel.hrm.server;
 import com.bhel.hrm.net.SettingsSupport;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -21,6 +23,7 @@ public record ServerSettings(int registryPort, int objectPort, Path keyStore, St
     private static final int DEFAULT_REGISTRY_PORT = 1099;
     private static final int DEFAULT_OBJECT_PORT = 1100;
     private static final String DEFAULT_KEYSTORE = "config/server.keystore";
+    private static final String SETUP_GUIDE = "See docs/two-computer-setup.md.";
 
     public static ServerSettings from(Properties props, Map<String, String> env) {
         return new ServerSettings(
@@ -37,6 +40,36 @@ public record ServerSettings(int registryPort, int objectPort, Path keyStore, St
             props.load(reader);
         }
         return from(props, env);
+    }
+
+    /**
+     * One line for the server's start-up message: which computers can connect, or why none can. The address
+     * in {@code rmi.hostname} goes into every stub, so a wrong one only fails later, on the client's computer.
+     *
+     * @param certificateNames the names the server certificate is valid for ({@link CertificateNames#read})
+     */
+    public String addressNote(List<String> certificateNames) {
+        if (hostname == null) {
+            return "rmi.hostname is not set, so RMI picks an address for this computer that clients may refuse. "
+                    + SETUP_GUIDE;
+        }
+        if (!CertificateNames.covers(certificateNames, hostname)) {
+            return "WARNING: rmi.hostname is " + hostname + " but the server certificate is not valid for it, "
+                    + "so every client will refuse the connection. Make new keys that include it. " + SETUP_GUIDE;
+        }
+        if (isThisComputerOnly(hostname)) {
+            return "Only programs on this computer can connect (rmi.hostname=" + hostname + "). " + SETUP_GUIDE;
+        }
+        return "Clients on other computers connect with server.host=" + hostname + ".";
+    }
+
+    /** localhost, or an IP address of this computer's loopback (127.x.x.x, ::1 in any spelling). */
+    private static boolean isThisComputerOnly(String host) {
+        if (host.equalsIgnoreCase("localhost")) {
+            return true;
+        }
+        InetAddress ip = CertificateNames.ipAddress(host);
+        return ip != null && ip.isLoopbackAddress();
     }
 
     /** Leaves the password out so it cannot end up in a log. */

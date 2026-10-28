@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Test helper: makes a throwaway server identity (keystore for the server, truststore for the client)
@@ -25,19 +26,46 @@ public final class TlsTestFiles {
 
     /** A self-signed certificate valid only for {@code dnsName}. */
     public static Identity createIdentity(Path dir, String name, String dnsName) throws IOException {
+        return createIdentity(dir, name, List.of(dnsName));
+    }
+
+    /**
+     * A self-signed certificate valid for each of {@code addresses}. Host names become DNS entries and
+     * IP addresses become IP entries, as in the key scripts: Java never accepts an IP address through a DNS entry.
+     */
+    public static Identity createIdentity(Path dir, String name, List<String> addresses) throws IOException {
+        String san = addresses.stream()
+                .map(address -> (isIpAddress(address) ? "ip:" : "dns:") + address)
+                .collect(Collectors.joining(","));
+        return create(dir, name, addresses.get(0), "-ext", "san=" + san);
+    }
+
+    /** A certificate like the key scripts made before they listed addresses: only a CN, no alternative names. */
+    public static Identity createOldStyleIdentity(Path dir, String name, String commonName) throws IOException {
+        return create(dir, name, commonName);
+    }
+
+    private static Identity create(Path dir, String name, String commonName, String... extraOptions)
+            throws IOException {
         Path keyStore = dir.resolve(name + ".keystore");
         Path certificate = dir.resolve(name + ".cer");
         Path trustStore = dir.resolve(name + ".truststore");
 
-        keytool("-genkeypair", "-alias", "hrm", "-keyalg", "RSA", "-keysize", "2048", "-validity", "2",
-                "-dname", "CN=" + dnsName, "-ext", "san=dns:" + dnsName,
+        List<String> generate = new ArrayList<>(List.of("-genkeypair", "-alias", "hrm", "-keyalg", "RSA",
+                "-keysize", "2048", "-validity", "2", "-dname", "CN=" + commonName,
                 "-keystore", keyStore.toString(), "-storetype", "PKCS12",
-                "-storepass", PASSWORD, "-keypass", PASSWORD);
+                "-storepass", PASSWORD, "-keypass", PASSWORD));
+        generate.addAll(List.of(extraOptions));
+        keytool(generate.toArray(String[]::new));
         keytool("-exportcert", "-alias", "hrm", "-keystore", keyStore.toString(),
                 "-storepass", PASSWORD, "-file", certificate.toString());
         keytool("-importcert", "-noprompt", "-alias", "hrm", "-file", certificate.toString(),
                 "-keystore", trustStore.toString(), "-storetype", "PKCS12", "-storepass", PASSWORD);
         return new Identity(keyStore, trustStore);
+    }
+
+    private static boolean isIpAddress(String address) {
+        return address.matches("[0-9.]+") || address.contains(":");
     }
 
     /** A port nothing is listening on right now. */
