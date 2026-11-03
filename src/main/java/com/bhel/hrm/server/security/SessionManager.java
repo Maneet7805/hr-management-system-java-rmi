@@ -1,6 +1,6 @@
 package com.bhel.hrm.server.security;
 
-import com.bhel.hrm.common.model.Role;
+import com.bhel.hrm.common.model.Session.Role;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;

@@ -1,6 +1,6 @@
 package com.bhel.hrm.server.security;
 
-import com.bhel.hrm.common.exception.ValidationException;
+import com.bhel.hrm.common.exception.HrmException.ValidationException;
 
 /**
  * Rules for a new password. Length matters more than mixing character types, so there are no

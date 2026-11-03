@@ -21,4 +21,10 @@ public record Session(String token, long employeeId, String displayName, Role ro
     public String toString() {
         return "Session[employeeId=" + employeeId + ", role=" + role + "]";
     }
+
+    /** What a logged-in user may do. HR manages employees and leave; EMPLOYEE manages their own data. */
+    public enum Role {
+        HR,
+        EMPLOYEE
+    }
 }

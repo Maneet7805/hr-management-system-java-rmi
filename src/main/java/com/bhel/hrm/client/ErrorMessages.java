@@ -1,7 +1,7 @@
 package com.bhel.hrm.client;
 
 import com.bhel.hrm.common.exception.HrmException;
-import com.bhel.hrm.common.exception.InvalidCredentialsException;
+import com.bhel.hrm.common.exception.HrmException.InvalidCredentialsException;
 import java.rmi.RemoteException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,8 +14,8 @@ import java.util.logging.Logger;
 public final class ErrorMessages {
 
     /**
-     * The server's wording for "no such session". The client recognises an expired session by it, so a
-     * test checks it against the text the server really sends.
+     * The server's wording for "no such session". The client recognises an expired session by it, so it must stay
+     * identical to the text the server really sends.
      */
     public static final String SESSION_EXPIRED = "Your session has expired. Please log in again.";
 

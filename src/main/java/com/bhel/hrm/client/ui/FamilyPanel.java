@@ -1,7 +1,11 @@
 package com.bhel.hrm.client.ui;
 
+import com.bhel.hrm.client.ui.Ui.Confirmer;
+import com.bhel.hrm.client.ui.Ui.DateInput;
+import com.bhel.hrm.client.ui.Ui.Display;
+import com.bhel.hrm.client.ui.Ui.Navigator;
 import com.bhel.hrm.common.HRMService;
-import com.bhel.hrm.common.exception.NotFoundException;
+import com.bhel.hrm.common.exception.HrmException.NotFoundException;
 import com.bhel.hrm.common.model.FamilyMember;
 import com.bhel.hrm.common.model.Session;
 import java.awt.BorderLayout;
@@ -9,6 +13,7 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -18,6 +23,7 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.table.AbstractTableModel;
 
 /**
  * "Family": the person's family members in a table, and a form to add one, or to change or remove the one
@@ -239,5 +245,47 @@ public final class FamilyPanel extends JPanel {
 
     JTextArea statusText() {
         return statusText;
+    }
+
+    /** The rows of the family table. Read-only: editing happens in the form beside it. */
+    static final class FamilyTableModel extends AbstractTableModel {
+
+        private static final String[] COLUMNS = {"Name", "Relationship", "Date of birth"};
+
+        private List<FamilyMember> members = new ArrayList<>();
+
+        void setMembers(List<FamilyMember> newMembers) {
+            members = new ArrayList<>(newMembers);
+            fireTableDataChanged();
+        }
+
+        FamilyMember memberAt(int row) {
+            return members.get(row);
+        }
+
+        @Override
+        public int getRowCount() {
+            return members.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return COLUMNS.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return COLUMNS[column];
+        }
+
+        @Override
+        public Object getValueAt(int row, int column) {
+            FamilyMember member = members.get(row);
+            return switch (column) {
+                case 0 -> member.name();
+                case 1 -> member.relationship();
+                default -> Display.date(member.dateOfBirth());
+            };
+        }
     }
 }

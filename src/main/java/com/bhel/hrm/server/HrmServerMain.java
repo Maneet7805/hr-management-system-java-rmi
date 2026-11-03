@@ -1,7 +1,7 @@
 package com.bhel.hrm.server;
 
 import com.bhel.hrm.net.SettingsSupport;
-import com.bhel.hrm.server.dao.Database;
+import com.bhel.hrm.server.dao.DataAccess.Database;
 import com.bhel.hrm.server.db.DbSettings;
 import com.bhel.hrm.server.db.JdbcDatabase;
 import com.bhel.hrm.server.security.PasswordHasher;

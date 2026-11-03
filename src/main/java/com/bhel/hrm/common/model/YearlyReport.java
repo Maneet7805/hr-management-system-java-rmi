@@ -1,5 +1,6 @@
 package com.bhel.hrm.common.model;
 
+import com.bhel.hrm.common.model.LeaveType.LeaveBalance;
 import java.io.Serializable;
 import java.util.List;
 

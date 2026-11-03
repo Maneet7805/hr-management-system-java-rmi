@@ -1,8 +1,8 @@
 package com.bhel.hrm.server.db;
 
-import com.bhel.hrm.server.dao.DataAccessException;
-import com.bhel.hrm.server.dao.Database;
-import com.bhel.hrm.server.dao.Work;
+import com.bhel.hrm.server.dao.DataAccess.DataAccessException;
+import com.bhel.hrm.server.dao.DataAccess.Database;
+import com.bhel.hrm.server.dao.DataAccess.Work;
 import com.bhel.hrm.server.dao.jdbc.JdbcDataAccess;
 import java.sql.Connection;
 import java.sql.DriverManager;

@@ -1,20 +1,21 @@
 package com.bhel.hrm.server.service;
 
+import com.bhel.hrm.common.exception.HrmException.InvalidCredentialsException;
+import com.bhel.hrm.common.exception.HrmException.PermissionDeniedException;
+import com.bhel.hrm.common.exception.HrmException.ValidationException;
 import com.bhel.hrm.common.exception.HrmException;
-import com.bhel.hrm.common.exception.InvalidCredentialsException;
-import com.bhel.hrm.common.exception.PermissionDeniedException;
-import com.bhel.hrm.common.exception.ValidationException;
 import com.bhel.hrm.common.model.Employee;
-import com.bhel.hrm.common.model.Role;
+import com.bhel.hrm.common.model.Session.Role;
 import com.bhel.hrm.common.model.Session;
-import com.bhel.hrm.server.dao.DataAccessException;
-import com.bhel.hrm.server.dao.Database;
-import com.bhel.hrm.server.dao.LoginRecord;
-import com.bhel.hrm.server.dao.StoredCredentials;
+import com.bhel.hrm.server.dao.DataAccess.DataAccessException;
+import com.bhel.hrm.server.dao.DataAccess.Database;
+import com.bhel.hrm.server.dao.DataAccess.LoginRecord;
+import com.bhel.hrm.server.dao.DataAccess.StoredCredentials;
 import com.bhel.hrm.server.security.PasswordHasher;
 import com.bhel.hrm.server.security.PasswordPolicy;
-import com.bhel.hrm.server.security.SessionManager;
 import com.bhel.hrm.server.security.SessionManager.ActiveSession;
+import com.bhel.hrm.server.security.SessionManager;
+import com.bhel.hrm.server.service.ServiceSupport.ServiceErrors;
 import java.util.Optional;
 
 /**

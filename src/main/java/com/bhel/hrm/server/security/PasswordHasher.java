@@ -1,6 +1,6 @@
 package com.bhel.hrm.server.security;
 
-import com.bhel.hrm.server.dao.StoredCredentials;
+import com.bhel.hrm.server.dao.DataAccess.StoredCredentials;
 
 /** Turns a password into something safe to store, and checks a password against it later. */
 public interface PasswordHasher {

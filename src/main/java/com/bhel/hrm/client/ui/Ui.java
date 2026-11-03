@@ -1,11 +1,28 @@
 package com.bhel.hrm.client.ui;
 
 import com.bhel.hrm.client.ErrorMessages;
+import com.bhel.hrm.common.model.LeaveApplication.LeaveStatus;
+import com.bhel.hrm.common.model.LeaveType.LeaveBalance;
+import com.bhel.hrm.common.model.LeaveType;
+import com.bhel.hrm.common.model.Session.Role;
+import com.bhel.hrm.common.model.Session;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.io.File;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Optional;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.UIManager;
 
@@ -93,5 +110,151 @@ final class Ui {
         c.insets = new Insets(4, 4, 4, 4);
         c.anchor = GridBagConstraints.WEST;
         return c;
+    }
+
+    /** Asks "are you sure?" before something that cannot be undone. An interface so the dialog code stays out of the screens. */
+    @FunctionalInterface
+    public interface Confirmer {
+
+        boolean confirm(String question);
+
+        /** A Yes/No dialog over {@code parent}. Call it on the event thread. */
+        static Confirmer dialog(Component parent) {
+            return question -> JOptionPane.showConfirmDialog(parent, question, "Please confirm",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION;
+        }
+    }
+
+    /** Puts text on the clipboard. An interface so the clipboard code stays out of the screens. */
+    @FunctionalInterface
+    public interface ClipboardWriter {
+
+        void copy(String text);
+
+        static ClipboardWriter system() {
+            return text -> Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);
+        }
+    }
+
+    /** Asks the person where to save a file. An interface so the file-chooser code stays out of the screens. */
+    @FunctionalInterface
+    public interface FileSaver {
+
+        /** @return the chosen file, or empty if the person cancelled */
+        Optional<Path> chooseFile(String suggestedName);
+
+        /** A standard "Save as" dialog over {@code parent}; asks before replacing an existing file. Call on the event thread. */
+        static FileSaver dialog(Component parent) {
+            return suggestedName -> {
+                JFileChooser chooser = new JFileChooser();
+                chooser.setDialogTitle("Save report");
+                chooser.setSelectedFile(new File(suggestedName));
+                if (chooser.showSaveDialog(parent) != JFileChooser.APPROVE_OPTION) {
+                    return Optional.empty();
+                }
+                File file = chooser.getSelectedFile();
+                if (file.exists() && JOptionPane.showConfirmDialog(parent,
+                        file.getName() + " already exists. Replace it?", "Please confirm",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) {
+                    return Optional.empty();
+                }
+                return Optional.of(file.toPath());
+            };
+        }
+    }
+
+    /** How a screen asks the window to show another screen. Kept apart from the window so screens can be tested alone. */
+    public interface Navigator {
+
+        /** The login screen. {@code message} (may be {@code null}) is shown on it, for example "session expired". */
+        void showLogin(String message);
+
+        /** For someone who must choose their own password before doing anything else. */
+        void showChangePassword(Session session);
+
+        void showHome(Session session);
+    }
+
+    /**
+     * Reads a date a person typed. The form is yyyy-MM-dd and the screens show it next to the field, because Swing
+     * has no standard calendar widget (decision #66). A problem is reported as a sentence naming the field.
+     */
+    static final class DateInput {
+
+        private DateInput() {
+        }
+
+        /** @throws IllegalArgumentException with a message fit to show the user */
+        static LocalDate required(String text, String fieldName) {
+            String trimmed = text == null ? "" : text.trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("Enter the " + fieldName.toLowerCase() + ".");
+            }
+            return parse(trimmed, fieldName);
+        }
+
+        /** Empty means "no date"; anything else must still be a real date. */
+        static LocalDate optional(String text, String fieldName) {
+            String trimmed = text == null ? "" : text.trim();
+            return trimmed.isEmpty() ? null : parse(trimmed, fieldName);
+        }
+
+        private static LocalDate parse(String trimmed, String fieldName) {
+            try {
+                return LocalDate.parse(trimmed);
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException(
+                        fieldName + " must be a real date in the form yyyy-MM-dd, for example 2026-03-15.");
+            }
+        }
+    }
+
+    /** How values are written on screen. One place, so every screen writes the same thing the same way. */
+    static final class Display {
+
+        private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        private static final String UNLIMITED = "Unlimited";
+
+        private Display() {
+        }
+
+        /** Written the way the user types dates: yyyy-MM-dd. */
+        static String date(LocalDate date) {
+            return date == null ? "" : date.toString();
+        }
+
+        static String dateTime(LocalDateTime time) {
+            return time == null ? "" : DATE_TIME.format(time);
+        }
+
+        static String text(String value) {
+            return value == null ? "" : value;
+        }
+
+        static String status(LeaveStatus status) {
+            return switch (status) {
+                case PENDING -> "Pending";
+                case APPROVED -> "Approved";
+                case REJECTED -> "Rejected";
+            };
+        }
+
+        static String role(Role role) {
+            return role == Role.HR ? "HR staff" : "Employee";
+        }
+
+        /** A leave type with no yearly limit shows as "Unlimited". */
+        static String allowance(LeaveType type) {
+            return type.annualAllowance() == null ? UNLIMITED : String.valueOf(type.annualAllowance());
+        }
+
+        static String remaining(LeaveBalance balance) {
+            Integer remaining = balance.remaining();
+            return remaining == null ? UNLIMITED : String.valueOf(remaining);
+        }
+
+        static String days(int count) {
+            return count == 1 ? "1 day" : count + " days";
+        }
     }
 }

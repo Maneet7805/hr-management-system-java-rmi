@@ -1,7 +1,12 @@
 package com.bhel.hrm.client.ui;
 
+import com.bhel.hrm.client.ui.Ui.ClipboardWriter;
+import com.bhel.hrm.client.ui.Ui.Confirmer;
+import com.bhel.hrm.client.ui.Ui.Display;
+import com.bhel.hrm.client.ui.Ui.FileSaver;
+import com.bhel.hrm.client.ui.Ui.Navigator;
 import com.bhel.hrm.common.HRMService;
-import com.bhel.hrm.common.model.Role;
+import com.bhel.hrm.common.model.Session.Role;
 import com.bhel.hrm.common.model.Session;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
