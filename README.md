@@ -70,23 +70,17 @@ The manual steps below do the same things one by one, for other systems or for r
 2. Create the TLS keystore and truststore with `scripts/generate-keys.sh` (macOS/Linux) or `scripts/generate-keys.bat` (Windows).
 3. For each file in `config/`, copy `*.example.properties` to the same name without `.example` and fill in your values. The real files are git-ignored.
 4. Set `HRM_DB_PASSWORD`, `HRM_KEYSTORE_PASSWORD` and `HRM_TRUSTSTORE_PASSWORD` as environment variables.
-5. Create the database tables (see the last paragraph of [Running the tests](#running-the-tests)).
+5. Create the database tables (see [Creating the database tables](#creating-the-database-tables)).
 
 To create the first HR account, start the server and open the client, follow [Manual first run](#manual-first-run-for-example-from-an-ide).
 
-### Running the tests
+### Creating the database tables
 
-```bash
-mvn test
-```
+To create the tables in the development database `hrm`, run `com.bhel.hrm.server.db.DatabaseSetupMain` (it needs `HRM_DB_PASSWORD`).
 
-The database tests use a real MySQL database called `hrm_test` and a MySQL user `hrm_app` that may use it. Set the user's password in the environment variable `HRM_DB_PASSWORD` first. Without MySQL or that variable, those tests **fail** on purpose, so a green run always means the database was tested. To skip them deliberately (the quotes are needed in PowerShell):
+### Testing
 
-```bash
-mvn test "-Dhrm.skipDbTests=true"
-```
-
-To create the tables in the development database `hrm`, run `com.bhel.hrm.server.db.DatabaseSetupMain` (it also needs `HRM_DB_PASSWORD`).
+The system is tested by hand. Follow the cases in [docs/test-manual.md](docs/test-manual.md) and record what you see in the same file, using your part's ID prefix (`P1-`, `P2-`, `P3-`, `P4-`).
 
 ### Manual first run (for example from an IDE)
 
@@ -120,7 +114,6 @@ src/main/java/com/bhel/hrm/
   client/                        client entry point and server connection
     ui/                            Swing screens
 src/main/resources/              SQL schema and other resources
-src/test/java/                   JUnit tests, mirrors the main packages
 docs/                            test manual and diagrams
 ```
 
@@ -134,7 +127,7 @@ Open work is tracked in [GitHub issues](https://github.com/Maneet7805/hr-managem
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to work on a branch and open a pull request
 - [DECISION.md](DECISION.md): running log of project decisions and why they were made
-- [docs/test-manual.md](docs/test-manual.md): manual and automated test cases
+- [docs/test-manual.md](docs/test-manual.md): manual test cases
 - [docs/diagrams/](docs/diagrams): use case and architecture diagrams
 
 ## Team workflow

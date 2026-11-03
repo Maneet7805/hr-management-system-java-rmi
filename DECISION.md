@@ -12,7 +12,7 @@ Status: **Decided** (owner confirmed), **Assistant call** (made by Claude, owner
 | 3 | Database: MySQL 8.4 LTS | Decided | Recommended in team research draft. Owner confirmed. |
 | 4 | MySQL installed with `winget install Oracle.MySQL` (8.4.9) | Assistant call | Official Oracle package. Installs binaries only, no Windows service. |
 | 5 | Password hashing: PBKDF2-HMAC-SHA256, random salt per password, in the JDK | Assistant call | No extra dependency, easy to explain in an individual section. Hidden behind a `PasswordHasher` interface so it can be swapped (for example to BCrypt). |
-| 6 | Tests: test-first per feature (JUnit 5) | Decided | Gives evidence for the testing section. |
+| 6 | Testing: manual test cases recorded in `docs/test-manual.md` | Decided | The brief asks for a testing manual (task 10). |
 
 ## Scope and ownership
 
@@ -51,7 +51,7 @@ The brief only states the features. Everything below is our own design; the owne
 |---|---|---|
 | 19 | Leave balance is **computed**: yearly allowance minus approved days minus pending days for that type and year. Nothing is stored. | One source of truth, no drift. Replaces #12 and #13. |
 | 20 | The apply-leave check runs in one DB transaction that first locks the employee row (`SELECT ... FOR UPDATE`). | Two simultaneous applications cannot both use the last days. |
-| 21 | Days are **calendar days, inclusive** (start 1st, end 3rd = 3 days). Weekends and public holidays are not special. | Simplest rule to explain and test. |
+| 21 | Days are **calendar days, inclusive** (start 1st, end 3rd = 3 days). Weekends and public holidays are not special. | Simplest rule to explain. |
 | 22 | Leave that crosses 31 Dec / 1 Jan is rejected; the employee applies as two requests. | Keeps yearly balance and report simple. |
 | 23 | An employee cannot have two overlapping PENDING or APPROVED applications. | Prevents double-counting the same days. |
 | 24 | Statuses: PENDING, APPROVED, REJECTED. No cancel and no edit after applying. | Brief has no cancel. Smaller scope. |
@@ -85,8 +85,8 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 |---|---|---|
 | 37 | The service reaches data only through `Database.read(...)` and `Database.transaction(...)`; each hands out DAOs bound to one connection. | Explicit and easy to explain; no hidden per-thread connection. Needed for the row lock in #20. |
 | 38 | One connection per unit of work, no connection pool. | Enough for this project's size; keeps the code short. |
-| 39 | MySQL user `hrm_app` has full rights on `hrm` and `hrm_test` only. Its password was generated at random and lives only in the user environment variable `HRM_DB_PASSWORD` (owner approved, option A). | Least privilege that still lets the program create its own tables. Nothing secret in the repo. |
-| 40 | Database tests fail if MySQL or the password is missing. Skipping needs `mvn test "-Dhrm.skipDbTests=true"` (the quotes matter in PowerShell). GitHub Actions starts its own MySQL. | A green run must mean the database was really tested. Decided with the owner: no teammates are on the code yet. |
+| 39 | MySQL user `hrm_app` has full rights on `hrm` only. Its password was generated at random and lives only in the user environment variable `HRM_DB_PASSWORD` (owner approved, option A). | Least privilege that still lets the program create its own tables. Nothing secret in the repo. |
+| 40 | Test results are recorded by hand in `docs/test-manual.md`; each member uses their own ID prefix (`P1-`, `P2-`, `P3-`, `P4-`). | Four people can edit one file without clashing. |
 | 41 | Phone, email and address length limits (30, 100, 255) are checked in the Phase 5 service, not in the shared contract. | The contract is frozen; the columns are not. |
 | 42 | Repository is public (owner). `main` is protected: a pull request and the passing `test` check are required, 0 approvals, admins not forced. Secret scanning, push protection, Dependabot alerts and security updates are on. | Owner works alone for now; this still blocks accidental direct pushes and secret leaks. |
 | 43 | CI is GitHub Actions with Temurin Java 25 and a throwaway MySQL 8.4 container. Dependabot checks Maven and Actions weekly, grouped. | PR #6. |
@@ -109,7 +109,6 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 
 | # | Decision | Why |
 |---|---|---|
-| 53 | Service tests run against the real MySQL test database, not a hand-written fake. | The leave rules depend on SQL behaviour (overlap, sums, locks); a fake would copy that logic and could drift. The Phase 4 fake stays for the earlier tests. |
 | 54 | Temporary passwords are 12 characters from a 57-character alphabet without look-alikes (no 0/O, 1/l/I), about 70 bits. Shown once to HR, hashed in the database, never logged. | Easy to read out or copy by hand, and far too strong to guess before it is changed (#28, #48). |
 | 55 | HR staff can keep a profile and family like anyone else; leave methods are for employees only. | Follows #25. |
 | 56 | Leave can have past dates (a medical certificate often comes after the fact). The only date rules are the contract's (end not before start, one calendar year). | Not restricting what the brief does not restrict. |
@@ -120,7 +119,7 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | # | Decision | Why |
 |---|---|---|
 | 58 | Applying for leave runs these checks in this order, inside one transaction that first locks the employee row: leave type exists, no overlap with PENDING or APPROVED leave, enough days left (allowance minus approved minus pending for the start year). The refusal names the numbers: "Not enough Annual leave left: 14 day(s) remaining, 15 requested." | Implements #19, #20 and #23. The messages tell the user what to change. |
-| 59 | The row lock is proven necessary: with it removed, the test with ten simultaneous requests for the last three Emergency days and the test with five simultaneous requests for the same dates both fail. | Evidence for the report's section on concurrency. |
+| 59 | The row lock is necessary: without it, simultaneous requests for the last Emergency days could all pass the balance check and overspend. | Subject of the report's section on concurrency. |
 | 60 | Times (applied, decided) are the server's local time, cut to whole seconds, and carry no time zone. | The database stores whole seconds, so what is returned equals what is stored. A server in another zone would show its own local time. |
 | 61 | The yearly report is built in one transaction, so profile, family, applications and balances describe the same moment. | A report must not mix data from before and after a concurrent change. |
 
@@ -128,13 +127,12 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 
 | # | Decision | Why |
 |---|---|---|
-| 62 | One window with swappable screens (`ScreenHost`), system look and feel, no extra library. Every visit to the login screen builds a fresh one. | Simpler to navigate and to test; nothing typed earlier is left for the next person. |
+| 62 | One window with swappable screens (`ScreenHost`), system look and feel, no extra library. Every visit to the login screen builds a fresh one. | Simpler to navigate; nothing typed earlier is left for the next person. |
 | 63 | The client connects through `ResilientService`. Reads are tried up to 3 times (pauses 0.25 s then 0.5 s), looking the server up again each time. Writes are never repeated once the call was on its way; a write is repeated only when the connection could not be made at all. | The fault tolerance the brief asks for, without the risk of a duplicate leave application (#34). Shown to work against a real server that is stopped and restarted. |
-| 64 | Screens talk to the server only through `Tasks` (a `SwingWorker`): work off the event thread, callbacks on it. Tests check this for `Tasks` and for each screen. | CLAUDE.md rule 4: the window must never freeze. |
+| 64 | Screens talk to the server only through `Tasks` (a `SwingWorker`): work off the event thread, callbacks on it. | CLAUDE.md rule 4: the window must never freeze. |
 | 65 | Server messages are shown as written. Network and program errors become fixed calm sentences ("The connection to the HR server was lost. If you were saving something, check whether it was saved before trying again."). Nothing technical reaches the screen. An expired session is recognised by the server's own wording, and a test keeps the two texts equal. | Usability, and honesty about writes that may or may not have been saved. |
 | 66 | Dates are typed as text in the form `yyyy-MM-dd`, with the format shown beside the field. | Swing has no standard calendar widget, and a third-party one would be a new dependency. (Used from slice 7b.) |
 | 67 | Hint text is dark grey (#505050, about 6:1 contrast). The theme's own "disabled" grey measured about 2.3:1. | Found by drawing the screens to images and looking at them. |
-| 68 | Screens are tested without a display: driven by code (type, click) and drawn to PNG files in `target/screens` (not committed). | Fast, works in CI, and the layout can still be inspected. |
 
 ## Phase 7b: employee screens (all Assistant calls; the owner delegated the open choices on 2026-10-19)
 
@@ -156,8 +154,8 @@ Seed rows for `leave_type`: Annual 14, Medical 14, Emergency 3, Unpaid NULL (see
 | 77 | A new employee's temporary password is shown once, in its own box with Copy and Done. It is never written into a message. It disappears when HR presses Done, starts another registration, or switches to another tab. Whether to copy it to the clipboard is HR's choice. | A temporary password lying on screen or in a message is a leak waiting to happen (#54). |
 | 78 | Approving and rejecting leave both ask first, naming the person, days, type and dates. If the server says the request was already decided or no longer exists, the message is shown and the list is refreshed. | A decision cannot be undone (#24), and two HR users may act at once (#59). |
 | 79 | The yearly report is plain text: the same text is shown on screen and saved to a UTF-8 file, with a suggested name such as `yearly-report-AB123456-2026.txt`. The old report is cleared as soon as a new one is requested, and cancelling the save dialog is not an error. Replacing an existing file asks first. | Simple, readable anywhere (a text editor, Word), and a report on screen can never be mistaken for another employee's. |
-| 80 | Report layout: sections for the employee, family, leave balances and the year's applications, columns aligned with spaces; an empty section says "(none recorded)" or "(none)". | Easy to read and easy to test. |
-| 81 | Clipboard and file chooser sit behind small interfaces (`ClipboardWriter`, `FileSaver`), as the confirmation dialog does. | Tests need no display, and the real dialogs stay thin. |
+| 80 | Report layout: sections for the employee, family, leave balances and the year's applications, columns aligned with spaces; an empty section says "(none recorded)" or "(none)". | Easy to read. |
+| 81 | Clipboard and file chooser sit behind small interfaces (`ClipboardWriter`, `FileSaver`), as the confirmation dialog does. | The real dialogs stay thin. |
 
 ## Running the program (all Assistant calls; requested by the owner on 2026-10-19)
 

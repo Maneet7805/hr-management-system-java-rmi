@@ -33,7 +33,7 @@ Before you start work each day: `git checkout main && git pull`, then `git merge
 | `feature/` | New functionality | `feature/hr-report` |
 | `fix/` | Bug fixes | `fix/leave-balance-race` |
 | `docs/` | Report notes, README | `docs/protocols-section` |
-| `test/` | Tests | `test/leave-service` |
+| `test/` | Test manual entries | `test/leave-cases` |
 | `chore/` | Build, config | `chore/gitignore` |
 
 ## 4. Commit messages
@@ -64,7 +64,7 @@ Good: "Fix duplicate IC check on registration". Bad: "stuff", "changes", "final 
 
 - [ ] Branch is up to date with `main` and the project compiles
 - [ ] I ran the code and tested my change
-- [ ] I added or updated tests / test cases where relevant
+- [ ] I ran the manual test cases that cover my change and recorded the results in `docs/test-manual.md`
 - [ ] No secrets or personal data committed
 - [ ] The PR is small enough to review in 15 minutes
 
