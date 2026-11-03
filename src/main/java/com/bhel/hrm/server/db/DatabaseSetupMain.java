@@ -1,6 +1,6 @@
 package com.bhel.hrm.server.db;
 
-import com.bhel.hrm.server.dao.DataAccessException;
+import com.bhel.hrm.server.dao.DataAccess.DataAccessException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.Connection;

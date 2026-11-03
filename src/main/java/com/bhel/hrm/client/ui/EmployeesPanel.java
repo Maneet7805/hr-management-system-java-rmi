@@ -1,8 +1,10 @@
 package com.bhel.hrm.client.ui;
 
+import com.bhel.hrm.client.ui.Ui.ClipboardWriter;
+import com.bhel.hrm.client.ui.Ui.Navigator;
 import com.bhel.hrm.common.HRMService;
+import com.bhel.hrm.common.model.Employee.RegistrationResult;
 import com.bhel.hrm.common.model.Employee;
-import com.bhel.hrm.common.model.RegistrationResult;
 import com.bhel.hrm.common.model.Session;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -10,6 +12,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -17,6 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.table.AbstractTableModel;
 
 /**
  * HR's list of everyone, and the form to register a new employee. A new employee gets a one-time temporary
@@ -195,5 +199,49 @@ public final class EmployeesPanel extends JPanel {
 
     JTextArea statusText() {
         return statusText;
+    }
+
+    /** Everyone in the company, as HR sees them. Read-only. */
+    static final class EmployeeTableModel extends AbstractTableModel {
+
+        private static final String[] COLUMNS = {"Name", "IC/passport number", "Role", "Phone", "Email"};
+
+        private List<Employee> employees = new ArrayList<>();
+
+        void setEmployees(List<Employee> newEmployees) {
+            employees = new ArrayList<>(newEmployees);
+            fireTableDataChanged();
+        }
+
+        Employee employeeAt(int row) {
+            return employees.get(row);
+        }
+
+        @Override
+        public int getRowCount() {
+            return employees.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return COLUMNS.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return COLUMNS[column];
+        }
+
+        @Override
+        public Object getValueAt(int row, int column) {
+            Employee employee = employees.get(row);
+            return switch (column) {
+                case 0 -> employee.firstName() + " " + employee.lastName();
+                case 1 -> employee.icPassport();
+                case 2 -> Display.role(employee.role());
+                case 3 -> Display.text(employee.phone());
+                default -> Display.text(employee.email());
+            };
+        }
     }
 }

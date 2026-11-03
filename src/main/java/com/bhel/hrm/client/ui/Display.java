@@ -1,9 +1,9 @@
 package com.bhel.hrm.client.ui;
 
-import com.bhel.hrm.common.model.LeaveBalance;
-import com.bhel.hrm.common.model.LeaveStatus;
+import com.bhel.hrm.common.model.LeaveType.LeaveBalance;
+import com.bhel.hrm.common.model.LeaveApplication.LeaveStatus;
 import com.bhel.hrm.common.model.LeaveType;
-import com.bhel.hrm.common.model.Role;
+import com.bhel.hrm.common.model.Session.Role;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

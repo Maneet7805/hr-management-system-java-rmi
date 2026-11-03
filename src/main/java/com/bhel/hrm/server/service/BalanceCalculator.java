@@ -1,8 +1,8 @@
 package com.bhel.hrm.server.service;
 
-import com.bhel.hrm.common.exception.ValidationException;
-import com.bhel.hrm.common.model.LeaveBalance;
-import com.bhel.hrm.common.model.LeaveStatus;
+import com.bhel.hrm.common.exception.HrmException.ValidationException;
+import com.bhel.hrm.common.model.LeaveType.LeaveBalance;
+import com.bhel.hrm.common.model.LeaveApplication.LeaveStatus;
 import com.bhel.hrm.server.dao.DataAccess;
 import java.util.List;
 import java.util.Map;

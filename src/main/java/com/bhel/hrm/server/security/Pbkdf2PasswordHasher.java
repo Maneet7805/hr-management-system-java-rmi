@@ -1,6 +1,6 @@
 package com.bhel.hrm.server.security;
 
-import com.bhel.hrm.server.dao.StoredCredentials;
+import com.bhel.hrm.server.dao.DataAccess.StoredCredentials;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -30,7 +30,7 @@ public final class Pbkdf2PasswordHasher implements PasswordHasher {
         this(DEFAULT_ITERATIONS);
     }
 
-    /** A lower count is for tests only, to keep them fast. */
+    /** Lets the caller choose the iteration count; production uses the default above. */
     public Pbkdf2PasswordHasher(int iterations) {
         if (iterations < 1) {
             throw new IllegalArgumentException("Iterations must be at least 1");

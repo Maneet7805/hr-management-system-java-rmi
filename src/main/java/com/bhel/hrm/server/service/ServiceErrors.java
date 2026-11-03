@@ -1,7 +1,7 @@
 package com.bhel.hrm.server.service;
 
-import com.bhel.hrm.common.exception.ServiceUnavailableException;
-import com.bhel.hrm.server.dao.DataAccessException;
+import com.bhel.hrm.common.exception.HrmException.ServiceUnavailableException;
+import com.bhel.hrm.server.dao.DataAccess.DataAccessException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

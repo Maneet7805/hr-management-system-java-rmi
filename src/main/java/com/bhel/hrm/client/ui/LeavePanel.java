@@ -1,8 +1,9 @@
 package com.bhel.hrm.client.ui;
 
+import com.bhel.hrm.client.ui.Ui.Navigator;
 import com.bhel.hrm.common.HRMService;
 import com.bhel.hrm.common.model.LeaveApplication;
-import com.bhel.hrm.common.model.LeaveBalance;
+import com.bhel.hrm.common.model.LeaveType.LeaveBalance;
 import com.bhel.hrm.common.model.LeaveType;
 import com.bhel.hrm.common.model.Session;
 import java.awt.BorderLayout;
@@ -10,6 +11,7 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
@@ -21,6 +23,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.table.AbstractTableModel;
 
 /**
  * "Leave": the balance of each leave type for a year, a form to apply for leave, and the person's own
@@ -228,5 +231,93 @@ public final class LeavePanel extends JPanel {
 
     JTextArea statusText() {
         return statusText;
+    }
+
+    /** A list of leave applications: dates, type, status, reason, and when it was applied for and decided. */
+    static final class ApplicationTableModel extends AbstractTableModel {
+
+        private static final String[] COLUMNS =
+                {"From", "To", "Days", "Type", "Status", "Reason", "Applied", "Decided"};
+
+        private List<LeaveApplication> applications = new ArrayList<>();
+
+        void setApplications(List<LeaveApplication> newApplications) {
+            applications = new ArrayList<>(newApplications);
+            fireTableDataChanged();
+        }
+
+        LeaveApplication applicationAt(int row) {
+            return applications.get(row);
+        }
+
+        @Override
+        public int getRowCount() {
+            return applications.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return COLUMNS.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return COLUMNS[column];
+        }
+
+        @Override
+        public Object getValueAt(int row, int column) {
+            LeaveApplication application = applications.get(row);
+            return switch (column) {
+                case 0 -> Display.date(application.startDate());
+                case 1 -> Display.date(application.endDate());
+                case 2 -> Display.days(application.days());
+                case 3 -> application.leaveType().name();
+                case 4 -> Display.status(application.status());
+                case 5 -> Display.text(application.reason());
+                case 6 -> Display.dateTime(application.appliedAt());
+                default -> Display.dateTime(application.decidedAt());
+            };
+        }
+    }
+
+    /** The leave balances of one year, one row per leave type. */
+    static final class BalanceTableModel extends AbstractTableModel {
+
+        private static final String[] COLUMNS = {"Leave type", "Allowance", "Approved", "Pending", "Remaining"};
+
+        private List<LeaveBalance> balances = new ArrayList<>();
+
+        void setBalances(List<LeaveBalance> newBalances) {
+            balances = new ArrayList<>(newBalances);
+            fireTableDataChanged();
+        }
+
+        @Override
+        public int getRowCount() {
+            return balances.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return COLUMNS.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return COLUMNS[column];
+        }
+
+        @Override
+        public Object getValueAt(int row, int column) {
+            LeaveBalance balance = balances.get(row);
+            return switch (column) {
+                case 0 -> balance.leaveType().name();
+                case 1 -> Display.allowance(balance.leaveType());
+                case 2 -> String.valueOf(balance.approvedDays());
+                case 3 -> String.valueOf(balance.pendingDays());
+                default -> Display.remaining(balance);
+            };
+        }
     }
 }

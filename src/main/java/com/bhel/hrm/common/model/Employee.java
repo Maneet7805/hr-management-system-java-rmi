@@ -1,5 +1,6 @@
 package com.bhel.hrm.common.model;
 
+import com.bhel.hrm.common.model.Session.Role;
 import java.io.Serializable;
 import java.util.regex.Pattern;
 
@@ -37,6 +38,25 @@ public record Employee(
         Checks.requireNonNull(role, "Role");
         if (email != null && !email.isEmpty() && !email.contains("@")) {
             throw new IllegalArgumentException("Email must contain '@'");
+        }
+    }
+
+    /**
+     * Returned to HR when an employee is registered. The temporary password is shown once and
+     * the employee must change it at first login. {@code toString} leaves it out so it cannot end up in a log.
+     */
+    public record RegistrationResult(Employee employee, String temporaryPassword) implements Serializable {
+
+        private static final long serialVersionUID = 1L;
+
+        public RegistrationResult {
+            Checks.requireNonNull(employee, "Employee");
+            Checks.requireText(temporaryPassword, "Temporary password", 100);
+        }
+
+        @Override
+        public String toString() {
+            return "RegistrationResult[employee=" + employee.icPassport() + "]";
         }
     }
 }

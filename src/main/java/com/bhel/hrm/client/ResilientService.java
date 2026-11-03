@@ -1,7 +1,7 @@
 package com.bhel.hrm.client;
 
 import com.bhel.hrm.common.HRMService;
-import com.bhel.hrm.common.exception.ServiceUnavailableException;
+import com.bhel.hrm.common.exception.HrmException.ServiceUnavailableException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,7 +30,7 @@ public final class ResilientService implements InvocationHandler {
         HRMService connect() throws ServiceUnavailableException;
     }
 
-    /** Waits between attempts. A parameter so tests do not have to wait. */
+    /** Waits between attempts. A parameter so the pause can be replaced. */
     @FunctionalInterface
     public interface Pause {
         void sleep(long millis) throws InterruptedException;
@@ -43,7 +43,7 @@ public final class ResilientService implements InvocationHandler {
             "ping", "login", "getMyProfile", "getMyFamily", "listEmployees", "listPendingLeave",
             "getLeaveTypes", "getMyLeaveBalances", "getMyLeaveApplications", "generateYearlyReport");
 
-    /** Calls that change something. A test checks that every method of the service is in one list or the other. */
+    /** Calls that change something. Every method of the service must be in one list or the other. */
     private static final Set<String> WRITES = Set.of(
             "logout", "changePassword", "registerEmployee", "decideLeave", "updateMyContact",
             "addFamilyMember", "updateFamilyMember", "removeFamilyMember", "applyForLeave");

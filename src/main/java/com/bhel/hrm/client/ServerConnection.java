@@ -1,7 +1,7 @@
 package com.bhel.hrm.client;
 
 import com.bhel.hrm.common.HRMService;
-import com.bhel.hrm.common.exception.ServiceUnavailableException;
+import com.bhel.hrm.common.exception.HrmException.ServiceUnavailableException;
 import com.bhel.hrm.net.ClientTls;
 import com.bhel.hrm.net.RmiNames;
 import com.bhel.hrm.net.TlsClientSocketFactory;

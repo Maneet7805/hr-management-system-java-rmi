@@ -51,4 +51,11 @@ public record LeaveApplication(
             throw new IllegalArgumentException("Reason must be at most " + MAX_REASON_LENGTH + " characters");
         }
     }
+
+    /** Life cycle of a leave application. There is no cancel in this system. */
+    public enum LeaveStatus {
+        PENDING,
+        APPROVED,
+        REJECTED
+    }
 }

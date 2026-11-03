@@ -1,11 +1,11 @@
 package com.bhel.hrm.server.service;
 
-import com.bhel.hrm.common.exception.ServiceUnavailableException;
-import com.bhel.hrm.common.exception.ValidationException;
-import com.bhel.hrm.server.dao.DataAccessException;
-import com.bhel.hrm.server.dao.Database;
-import com.bhel.hrm.server.dao.DuplicateValueException;
-import com.bhel.hrm.server.dao.Work;
+import com.bhel.hrm.common.exception.HrmException.ServiceUnavailableException;
+import com.bhel.hrm.common.exception.HrmException.ValidationException;
+import com.bhel.hrm.server.dao.DataAccess.DataAccessException;
+import com.bhel.hrm.server.dao.DataAccess.Database;
+import com.bhel.hrm.server.dao.DataAccess.DuplicateValueException;
+import com.bhel.hrm.server.dao.DataAccess.Work;
 
 /** Small helpers the services share, so each service stays about its own rules. */
 final class ServiceSupport {

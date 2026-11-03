@@ -3,7 +3,7 @@ package com.bhel.hrm.client.ui;
 import com.bhel.hrm.common.model.Employee;
 import com.bhel.hrm.common.model.FamilyMember;
 import com.bhel.hrm.common.model.LeaveApplication;
-import com.bhel.hrm.common.model.LeaveBalance;
+import com.bhel.hrm.common.model.LeaveType.LeaveBalance;
 import com.bhel.hrm.common.model.YearlyReport;
 
 /**

@@ -1,5 +1,6 @@
 package com.bhel.hrm.client.ui;
 
+import com.bhel.hrm.client.ui.Ui.Navigator;
 import com.bhel.hrm.common.HRMService;
 import com.bhel.hrm.common.model.Employee;
 import com.bhel.hrm.common.model.Session;
