@@ -1,6 +1,10 @@
 package com.bhel.hrm.client.ui;
 
 import com.bhel.hrm.client.ErrorMessages;
+import com.bhel.hrm.common.model.LeaveApplication.LeaveStatus;
+import com.bhel.hrm.common.model.LeaveType.LeaveBalance;
+import com.bhel.hrm.common.model.LeaveType;
+import com.bhel.hrm.common.model.Session.Role;
 import com.bhel.hrm.common.model.Session;
 import java.awt.Color;
 import java.awt.Component;
@@ -11,6 +15,10 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Optional;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
@@ -165,5 +173,88 @@ final class Ui {
         void showChangePassword(Session session);
 
         void showHome(Session session);
+    }
+
+    /**
+     * Reads a date a person typed. The form is yyyy-MM-dd and the screens show it next to the field, because Swing
+     * has no standard calendar widget (decision #66). A problem is reported as a sentence naming the field.
+     */
+    static final class DateInput {
+
+        private DateInput() {
+        }
+
+        /** @throws IllegalArgumentException with a message fit to show the user */
+        static LocalDate required(String text, String fieldName) {
+            String trimmed = text == null ? "" : text.trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("Enter the " + fieldName.toLowerCase() + ".");
+            }
+            return parse(trimmed, fieldName);
+        }
+
+        /** Empty means "no date"; anything else must still be a real date. */
+        static LocalDate optional(String text, String fieldName) {
+            String trimmed = text == null ? "" : text.trim();
+            return trimmed.isEmpty() ? null : parse(trimmed, fieldName);
+        }
+
+        private static LocalDate parse(String trimmed, String fieldName) {
+            try {
+                return LocalDate.parse(trimmed);
+            } catch (DateTimeParseException e) {
+                throw new IllegalArgumentException(
+                        fieldName + " must be a real date in the form yyyy-MM-dd, for example 2026-03-15.");
+            }
+        }
+    }
+
+    /** How values are written on screen. One place, so every screen writes the same thing the same way. */
+    static final class Display {
+
+        private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        private static final String UNLIMITED = "Unlimited";
+
+        private Display() {
+        }
+
+        /** Written the way the user types dates: yyyy-MM-dd. */
+        static String date(LocalDate date) {
+            return date == null ? "" : date.toString();
+        }
+
+        static String dateTime(LocalDateTime time) {
+            return time == null ? "" : DATE_TIME.format(time);
+        }
+
+        static String text(String value) {
+            return value == null ? "" : value;
+        }
+
+        static String status(LeaveStatus status) {
+            return switch (status) {
+                case PENDING -> "Pending";
+                case APPROVED -> "Approved";
+                case REJECTED -> "Rejected";
+            };
+        }
+
+        static String role(Role role) {
+            return role == Role.HR ? "HR staff" : "Employee";
+        }
+
+        /** A leave type with no yearly limit shows as "Unlimited". */
+        static String allowance(LeaveType type) {
+            return type.annualAllowance() == null ? UNLIMITED : String.valueOf(type.annualAllowance());
+        }
+
+        static String remaining(LeaveBalance balance) {
+            Integer remaining = balance.remaining();
+            return remaining == null ? UNLIMITED : String.valueOf(remaining);
+        }
+
+        static String days(int count) {
+            return count == 1 ? "1 day" : count + " days";
+        }
     }
 }

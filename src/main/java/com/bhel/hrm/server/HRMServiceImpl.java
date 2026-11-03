@@ -17,7 +17,7 @@ import com.bhel.hrm.server.service.AuthService;
 import com.bhel.hrm.server.service.EmployeeService;
 import com.bhel.hrm.server.service.LeaveService;
 import com.bhel.hrm.server.service.ReportService;
-import com.bhel.hrm.server.service.ServiceErrors;
+import com.bhel.hrm.server.service.ServiceSupport.ServiceErrors;
 import java.time.LocalDate;
 import java.util.List;
 
