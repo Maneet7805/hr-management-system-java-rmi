@@ -42,7 +42,7 @@ Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Databa
 Maven, Java 25 (the `pom.xml` sets `maven.compiler.release`). Windows is the only fully scripted platform for now; macOS/Linux scripts are planned in issue #27.
 
 - Build: `mvn compile`
-- Test: `mvn test`. Database tests need MySQL, a `hrm_test` database, user `hrm_app` and env var `HRM_DB_PASSWORD`; without them they fail on purpose. Skip them deliberately with `mvn test "-Dhrm.skipDbTests=true"`.
+- Test: by hand. Follow `docs/test-manual.md` and record the results there.
 - Full check (what CI runs): `mvn --batch-mode verify`
 - First-time setup on Windows: `setup.bat`. Run everything: `run.bat` (starts MySQL, server and client).
 - Manual run (any OS, e.g. from an IDE): `scripts/generate-keys.sh|.bat`, then `DatabaseSetupMain`, `SeedHrMain`, `HrmServerMain`, `HrmClientMain`. Details in `README.md`.
