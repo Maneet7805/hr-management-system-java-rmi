@@ -35,7 +35,6 @@ Swing GUI client -> RMI over TLS -> RMI server (service layer) -> JDBC -> Databa
 5. Never add secrets, keystores, or real personal data to the repo.
 6. Use Java 25 features at most; Swing only (no JavaFX). Issue #27 plans to lower this to Java 21; check the open issues before using newer features.
 7. Keep code readable by students: small methods, clear names, comments that explain why.
-8. This is graded coursework with individual marks. Explain what you wrote so the author can describe it themselves. Do not generate report text for sections marked individual.
 
 ## Build and test
 
